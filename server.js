@@ -142,9 +142,16 @@ app.post("/api/call", upload.single("jobFile"), async (req, res) => {
   }
 });
 
-// Webhook to receive live transcriptions
+// Webhook to receive and log live transcriptions
 app.post("/webhook/transcript", (req, res) => {
-  console.log("📡 Transcript Webhook:", JSON.stringify(req.body, null, 2));
+  const { transcript, speaker, type, callId } = req.body;
+
+  if (type === "transcript" && transcript) {
+    console.log(`🗣️ [${speaker}] (${callId}): ${transcript}`);
+  } else {
+    console.log("📡 Unstructured Transcript Event:", JSON.stringify(req.body, null, 2));
+  }
+
   res.sendStatus(200);
 });
 
