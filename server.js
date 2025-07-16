@@ -43,7 +43,7 @@ app.post("/api/call", upload.single("jobFile"), async (req, res) => {
     });
   }
 
-  // Extract JD if jobDescription not provided directly
+  // Extract JD from file if not provided directly
   if (!jobDescription && jobFile) {
     try {
       const filePath = path.resolve(jobFile.path);
@@ -91,11 +91,11 @@ app.post("/api/call", upload.single("jobFile"), async (req, res) => {
               role: "assistant",
               content: `You are a professional AI recruiter. Use this job description to ask relevant screening questions:\n\n${jobDescription}\n\nPolitely collect responses from the candidate and evaluate if they are a good fit.
               Sound natural and human, not robotic or scripted. Speak like a helpful recruiter, not a call center bot.
-              Go Slow one question at a time
-              do not repeat job roles questions if not asked
-              Ask questions valid to Job description only
-              When all information are gathered end the call
-              Be like human and if candidate speaks something outside Job or something very unrelated politely bring him back to flow`
+              Go slow, one question at a time.
+              Do not repeat job roles questions if not asked.
+              Ask questions relevant to the job description only.
+              When all information is gathered, end the call.
+              Be human and if the candidate speaks something unrelated politely bring them back to the topic.`
             }
           ]
         },
@@ -148,30 +148,48 @@ app.post("/api/call", upload.single("jobFile"), async (req, res) => {
   }
 });
 
-// Webhook to receive and log live and final transcriptions
+// 🔁 Webhook to log all types of transcript events
 app.post("/webhook/transcript", (req, res) => {
   const payload = req.body;
 
-  // Live streaming transcript
-  if (payload?.type === "transcript" && payload?.transcript && payload?.speaker) {
+  // 1. Real-time streaming
+  if (payload?.type === "transcript" && payload.transcript && payload.speaker) {
     console.log(`🟢 [${payload.speaker}] (${payload.callId}): ${payload.transcript}`);
   }
 
-  // Final summary
+  // 2. Final summary
   else if (payload?.summary && payload?.messages) {
     console.log("\n📋 Final Summary:");
     console.log(`📝 Summary: ${payload.summary}`);
     console.log(`📜 Full Transcript:\n${payload.transcript}\n`);
-
     console.log("💬 Messages:");
     payload.messages.forEach(msg => {
       console.log(`[${msg.role === "bot" ? "AI" : "User"}]: ${msg.message}`);
     });
   }
 
-  // Catch-all for unknown structure
+  // 3. Conversation update
+  else if (payload?.message?.type === "conversation-update") {
+    const conversation = payload.message.conversation || [];
+    console.log("🗣️ Conversation Update:");
+    conversation.forEach(c => console.log(`[${c.role}]: ${c.content}`));
+    if (payload.message.messages?.length) {
+      console.log("📨 Raw Messages:");
+      payload.message.messages.forEach(m => {
+        console.log(`[${m.role}]: ${m.message}`);
+      });
+    }
+  }
+
+  // 4. Speech events
+  else if (payload?.message?.type === "speech-update") {
+    console.log(`🎙️ Speech ${payload.message.status} (${payload.message.role})`);
+  }
+
+  // 5. Anything else
   else {
-    console.log("📡 Unstructured Transcript Event:", JSON.stringify(payload, null, 2));
+    console.log("📡 Unknown Transcript Event:");
+    console.dir(payload, { depth: null });
   }
 
   res.sendStatus(200);
