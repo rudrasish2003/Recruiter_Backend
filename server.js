@@ -61,7 +61,7 @@ app.post("/api/call", upload.single("jobFile"), async (req, res) => {
       }
       fs.unlinkSync(filePath); // Clean up
     } catch (err) {
-      console.error("JD parsing error:", err.message);
+      console.error("❌ JD parsing error:", err.message);
       return res.status(500).json({
         success: false,
         error: "Failed to parse job description from file."
@@ -140,7 +140,7 @@ app.post("/api/call", upload.single("jobFile"), async (req, res) => {
       callId: callRes.data.id
     });
   } catch (err) {
-    console.error("Call failed:", err.response?.data || err.message);
+    console.error("❌ Call failed:", err.response?.data || err.message);
     res.status(500).json({
       success: false,
       error: err.response?.data || "Call initiation failed"
@@ -148,29 +148,53 @@ app.post("/api/call", upload.single("jobFile"), async (req, res) => {
   }
 });
 
-// Webhook to log only user-bot conversation to file
+// 🔁 Webhook to log all types of transcript events
 app.post("/webhook/transcript", (req, res) => {
   const payload = req.body;
-  const logFile = "conversation.log";
 
-  if (payload?.summary && Array.isArray(payload?.messages)) {
-    const conversationLog = payload.messages
-      .map(msg => {
-        const speaker = msg.role === "bot" ? "Assistant" : "User";
-        return `[${speaker}]: ${msg.message}`;
-      })
-      .join("\n");
+  // 1. Real-time streaming
+  if (payload?.type === "transcript" && payload.transcript && payload.speaker) {
+    console.log(`🟢 [${payload.speaker}] (${payload.callId}): ${payload.transcript}`);
+  }
 
-    const output = `Conversation from Call ID: ${payload.callId || "N/A"}\n${conversationLog}\n\n---\n`;
-
-    fs.appendFile(logFile, output, err => {
-      if (err) console.error("Failed to write conversation log:", err);
+  // 2. Final summary
+  else if (payload?.summary && payload?.messages) {
+    console.log("\n📋 Final Summary:");
+    console.log(`📝 Summary: ${payload.summary}`);
+    console.log(`📜 Full Transcript:\n${payload.transcript}\n`);
+    console.log("💬 Messages:");
+    payload.messages.forEach(msg => {
+      console.log(`[${msg.role === "bot" ? "AI" : "User"}]: ${msg.message}`);
     });
+  }
+
+  // 3. Conversation update
+  else if (payload?.message?.type === "conversation-update") {
+    const conversation = payload.message.conversation || [];
+    console.log("🗣️ Conversation Update:");
+    conversation.forEach(c => console.log(`[${c.role}]: ${c.content}`));
+    if (payload.message.messages?.length) {
+      console.log("📨 Raw Messages:");
+      payload.message.messages.forEach(m => {
+        console.log(`[${m.role}]: ${m.message}`);
+      });
+    }
+  }
+
+  // 4. Speech events
+  else if (payload?.message?.type === "speech-update") {
+    console.log(`🎙️ Speech ${payload.message.status} (${payload.message.role})`);
+  }
+
+  // 5. Anything else
+  else {
+    console.log("📡 Unknown Transcript Event:");
+    console.dir(payload, { depth: null });
   }
 
   res.sendStatus(200);
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
