@@ -94,7 +94,7 @@ app.post("/api/call", upload.single("jobFile"), async (req, res) => {
               Go Slow one question at a time
               do not repeat job roles questions if not asked
               Ask questions valid to Job description only
-              When all informtion are gathered end the call
+              When all information are gathered end the call
               Be like human and if candidate speaks something outside Job or something very unrelated politely bring him back to flow`
             }
           ]
@@ -148,14 +148,30 @@ app.post("/api/call", upload.single("jobFile"), async (req, res) => {
   }
 });
 
-// Webhook to receive and log live transcriptions
+// Webhook to receive and log live and final transcriptions
 app.post("/webhook/transcript", (req, res) => {
-  const { transcript, speaker, type, callId } = req.body;
+  const payload = req.body;
 
-  if (type === "transcript" && transcript) {
-    console.log(`🗣️ [${speaker}] (${callId}): ${transcript}`);
-  } else {
-    console.log("📡 Unstructured Transcript Event:", JSON.stringify(req.body, null, 2));
+  // Live streaming transcript
+  if (payload?.type === "transcript" && payload?.transcript && payload?.speaker) {
+    console.log(`🟢 [${payload.speaker}] (${payload.callId}): ${payload.transcript}`);
+  }
+
+  // Final summary
+  else if (payload?.summary && payload?.messages) {
+    console.log("\n📋 Final Summary:");
+    console.log(`📝 Summary: ${payload.summary}`);
+    console.log(`📜 Full Transcript:\n${payload.transcript}\n`);
+
+    console.log("💬 Messages:");
+    payload.messages.forEach(msg => {
+      console.log(`[${msg.role === "bot" ? "AI" : "User"}]: ${msg.message}`);
+    });
+  }
+
+  // Catch-all for unknown structure
+  else {
+    console.log("📡 Unstructured Transcript Event:", JSON.stringify(payload, null, 2));
   }
 
   res.sendStatus(200);
