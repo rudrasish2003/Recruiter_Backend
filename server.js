@@ -7,31 +7,14 @@ const multer = require("multer");
 const fs = require("fs");
 const pdfParse = require("pdf-parse");
 const path = require("path");
-const { WebSocketServer } = require("ws");
-const http = require("http");
 
 dotenv.config();
 
 const app = express();
-const server = http.createServer(app); // create HTTP server
-const wss = new WebSocketServer({ server }); // WebSocket server
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
-
-// Track connected WebSocket clients
-const connectedClients = new Set();
-
-wss.on("connection", (ws) => {
-  console.log("🟢 Frontend connected via WebSocket");
-  connectedClients.add(ws);
-
-  ws.on("close", () => {
-    console.log("🔴 Frontend disconnected");
-    connectedClients.delete(ws);
-  });
-});
 
 // Multer setup for file uploads
 const upload = multer({ dest: "uploads/" });
@@ -114,13 +97,13 @@ ${jobDescription}
 
 Follow these instructions carefully:
 
-- Ask one clear and concise question at a time. Do not combine multiple questions.
-- Wait patiently for the candidate to respond fully before speaking again.
-- React naturally and politely to each answer.
-- Maintain a warm, conversational tone—never robotic or scripted.
-- Ask only job-relevant questions based on the description provided.
+- Ask **one clear and concise question at a time**. Do not combine multiple questions.
+- **Wait patiently** for the candidate to respond fully before speaking again. Do not interrupt or talk over them.
+- React **naturally and politely** to each answer, just as a human recruiter would.
+- Maintain a **warm, conversational tone**—never robotic or scripted.
+- Ask **only job-relevant** questions based on the description provided.
 - If the candidate goes off-topic or silent, gently guide them back with empathy.
-- Do not repeat questions that have already been answered.
+- **Do not repeat** questions that have already been answered.
 - When you have gathered enough information, politely thank them and end the call.
 
 You are here to make the candidate feel comfortable while collecting the information needed to assess their fit for the role.`
@@ -180,27 +163,49 @@ You are here to make the candidate feel comfortable while collecting the informa
 app.post("/webhook/transcript", (req, res) => {
   const payload = req.body;
 
-  // Broadcast transcript to all WebSocket clients
+  // 1. Real-time streaming
   if (payload?.type === "transcript" && payload.transcript && payload.speaker) {
-    const msg = {
-      id: Date.now().toString(),
-      speaker: payload.speaker === "bot" ? "AI" : "Candidate",
-      text: payload.transcript,
-      timestamp: new Date().toISOString()
-    };
+    console.log(`[${payload.speaker}] (${payload.callId}): ${payload.transcript}`);
+  }
 
-    console.log(`[${msg.speaker}] ${msg.text}`);
-
-    connectedClients.forEach((client) => {
-      if (client.readyState === 1) {
-        client.send(JSON.stringify(msg));
-      }
+  // 2. Final summary
+  else if (payload?.summary && payload?.messages) {
+    console.log("\n Final Summary:");
+    console.log(` Summary: ${payload.summary}`);
+    console.log(` Full Transcript:\n${payload.transcript}\n`);
+    console.log(" Messages:");
+    payload.messages.forEach(msg => {
+      console.log(`[${msg.role === "bot" ? "AI" : "User"}]: ${msg.message}`);
     });
+  }
+
+  // 3. Conversation update
+  else if (payload?.message?.type === "conversation-update") {
+    const conversation = payload.message.conversation || [];
+    console.log("🗣️ Conversation Update:");
+    conversation.forEach(c => console.log(`[${c.role}]: ${c.content}`));
+    if (payload.message.messages?.length) {
+      console.log("Raw Messages:");
+      payload.message.messages.forEach(m => {
+        console.log(`[${m.role}]: ${m.message}`);
+      });
+    }
+  }
+
+  // 4. Speech events
+  else if (payload?.message?.type === "speech-update") {
+    console.log(` Speech ${payload.message.status} (${payload.message.role})`);
+  }
+
+  // 5. Anything else
+  else {
+    console.log(" Unknown Transcript Event:");
+    console.dir(payload, { depth: null });
   }
 
   res.sendStatus(200);
 });
 
-server.listen(PORT, () => {
+app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
