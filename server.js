@@ -22,6 +22,7 @@ app.use(bodyParser.json());
 
 const connectedClients = new Set();
 
+// WebSocket connection
 wss.on("connection", (ws) => {
   console.log("🟢 Frontend connected via WebSocket");
   connectedClients.add(ws);
@@ -40,6 +41,7 @@ const allowedVoiceIds = [
   "Hana", "Neha", "Cole", "Harry", "Paige", "Spencer"
 ];
 
+// Start call
 app.post("/api/call", upload.single("jobFile"), async (req, res) => {
   const { candidateName, phoneNumber, voiceId } = req.body;
   const jobFile = req.file;
@@ -151,7 +153,8 @@ Follow these instructions carefully:
           name: candidateName
         },
         assistantId,
-        phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID
+        phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
+        transcriptionWebhookUrl: `${process.env.SERVER_URL}/webhook/transcript` // ✅ Added
       },
       {
         headers: {
@@ -174,7 +177,7 @@ Follow these instructions carefully:
   }
 });
 
-// Transcript Webhook
+// Webhook to receive live transcript
 app.post("/webhook/transcript", (req, res) => {
   const payload = req.body;
 
