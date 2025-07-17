@@ -1,14 +1,9 @@
 const express = require("express");
-const axios = require("axios");
-const dotenv = require("dotenv");
 const cors = require("cors");
 const bodyParser = require("body-parser");
-const multer = require("multer");
-const fs = require("fs");
-const pdfParse = require("pdf-parse");
-const path = require("path");
-
-dotenv.config();
+const { Vapi } = require("vapi-node");
+const http = require("http");
+const WebSocket = require("ws");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,196 +11,107 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Multer setup for file uploads
-const upload = multer({ dest: "uploads/" });
+const vapi = new Vapi(process.env.VAPI_API_KEY || "sk_live_example");
 
-const allowedVoiceIds = [
-  "Elliot", "Kylie", "Rohan", "Lily", "Savannah",
-  "Hana", "Neha", "Cole", "Harry", "Paige", "Spencer"
-];
+// Store connected WebSocket clients
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+const clients = new Set();
 
-app.post("/api/call", upload.single("jobFile"), async (req, res) => {
-  const { candidateName, phoneNumber, voiceId } = req.body;
-  const jobFile = req.file;
-  let jobDescription = req.body.jobDescription;
+wss.on("connection", (ws) => {
+  console.log("🔌 WebSocket client connected");
+  clients.add(ws);
 
-  if (!candidateName || !phoneNumber || (!jobDescription && !jobFile)) {
-    return res.status(400).json({
-      success: false,
-      error: "Missing required fields: candidateName, phoneNumber, and either jobDescription or jobFile"
-    });
-  }
-
-  if (!process.env.VAPI_API_KEY || !process.env.VAPI_PHONE_NUMBER_ID || !process.env.SERVER_URL) {
-    return res.status(500).json({
-      success: false,
-      error: "Missing environment variables. Ensure VAPI_API_KEY, VAPI_PHONE_NUMBER_ID, SERVER_URL are set."
-    });
-  }
-
-  // Extract JD from file if not provided directly
-  if (!jobDescription && jobFile) {
-    try {
-      const filePath = path.resolve(jobFile.path);
-      if (jobFile.mimetype === "application/pdf") {
-        const dataBuffer = fs.readFileSync(filePath);
-        const parsed = await pdfParse(dataBuffer);
-        jobDescription = parsed.text;
-      } else if (jobFile.mimetype === "text/plain") {
-        jobDescription = fs.readFileSync(filePath, "utf-8");
-      } else {
-        return res.status(400).json({
-          success: false,
-          error: "Unsupported file type. Only .txt and .pdf are allowed."
-        });
-      }
-      fs.unlinkSync(filePath); // Clean up
-    } catch (err) {
-      console.error(" JD parsing error:", err.message);
-      return res.status(500).json({
-        success: false,
-        error: "Failed to parse job description from file."
-      });
-    }
-  }
-
-  const selectedVoiceId = allowedVoiceIds.includes(voiceId) ? voiceId : "Rohan";
-
-  try {
-    // Create assistant
-    const assistantRes = await axios.post(
-      "https://api.vapi.ai/assistant",
-      {
-        name: "AI Recruiter Assistant",
-        firstMessage: `Hi ${candidateName}, I'm calling on behalf of the HR team to discuss your application.`,
-        firstMessageMode: "assistant-speaks-first",
-        voice: {
-          provider: "vapi",
-          voiceId: selectedVoiceId
-        },
-        model: {
-          provider: "openai",
-          model: "gpt-4o",
-          messages: [
-            {
-              role: "assistant",
-              content: `You are a professional and friendly AI recruiter conducting a screening call for a job opening.
-
-Use the following job description to ask relevant and personalized screening questions:
-
-${jobDescription}
-
-Follow these instructions carefully:
-
-- Ask **one clear and concise question at a time**. Do not combine multiple questions.
-- **Wait patiently** for the candidate to respond fully before speaking again. Do not interrupt or talk over them.
-- React **naturally and politely** to each answer, just as a human recruiter would.
-- Maintain a **warm, conversational tone**—never robotic or scripted.
-- Ask **only job-relevant** questions based on the description provided.
-- If the candidate goes off-topic or silent, gently guide them back with empathy.
-- **Do not repeat** questions that have already been answered.
-- When you have gathered enough information, politely thank them and end the call.
-
-You are here to make the candidate feel comfortable while collecting the information needed to assess their fit for the role.`
-            }
-          ]
-        },
-        transcriber: {
-          provider: "deepgram",
-          language: "en"
-        },
-        server: {
-          url: `${process.env.SERVER_URL}/webhook/transcript`
-        }
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.VAPI_API_KEY}`
-        }
-      }
-    );
-
-    const assistantId = assistantRes.data.id;
-
-    // Start call
-    const callRes = await axios.post(
-      "https://api.vapi.ai/call",
-      {
-        customer: {
-          number: phoneNumber,
-          name: candidateName
-        },
-        assistantId,
-        phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.VAPI_API_KEY}`
-        }
-      }
-    );
-
-    res.status(200).json({
-      success: true,
-      assistantId,
-      callId: callRes.data.id
-    });
-  } catch (err) {
-    console.error("Call failed:", err.response?.data || err.message);
-    res.status(500).json({
-      success: false,
-      error: err.response?.data || "Call initiation failed"
-    });
-  }
+  ws.on("close", () => {
+    console.log("❌ WebSocket client disconnected");
+    clients.delete(ws);
+  });
 });
 
-// 🔁 Webhook to log all types of transcript events
-app.post("/webhook/transcript", (req, res) => {
+// ========== ROUTES ==========
+
+// Webhook to receive events from Vapi
+app.post("/webhook", async (req, res) => {
   const payload = req.body;
+  console.log("📩 Webhook received:", JSON.stringify(payload, null, 2));
 
-  // 1. Real-time streaming
-  if (payload?.type === "transcript" && payload.transcript && payload.speaker) {
-    console.log(`[${payload.speaker}] (${payload.callId}): ${payload.transcript}`);
-  }
-
-  // 2. Final summary
-  else if (payload?.summary && payload?.messages) {
-    console.log("\n Final Summary:");
-    console.log(` Summary: ${payload.summary}`);
-    console.log(` Full Transcript:\n${payload.transcript}\n`);
-    console.log(" Messages:");
-    payload.messages.forEach(msg => {
-      console.log(`[${msg.role === "bot" ? "AI" : "User"}]: ${msg.message}`);
-    });
-  }
-
-  // 3. Conversation update
-  else if (payload?.message?.type === "conversation-update") {
-    const conversation = payload.message.conversation || [];
-    console.log("🗣️ Conversation Update:");
-    conversation.forEach(c => console.log(`[${c.role}]: ${c.content}`));
-    if (payload.message.messages?.length) {
-      console.log("Raw Messages:");
-      payload.message.messages.forEach(m => {
-        console.log(`[${m.role}]: ${m.message}`);
-      });
-    }
-  }
-
-  // 4. Speech events
-  else if (payload?.message?.type === "speech-update") {
-    console.log(` Speech ${payload.message.status} (${payload.message.role})`);
-  }
-
-  // 5. Anything else
-  else {
-    console.log(" Unknown Transcript Event:");
-    console.dir(payload, { depth: null });
+  if (payload.type === "call_stopped") {
+    console.log("📞 Call ended:", payload.callId);
   }
 
   res.sendStatus(200);
 });
 
-app.listen(PORT, () => {
+// Webhook to receive transcript data from Vapi
+app.post("/webhook/transcript", async (req, res) => {
+  const payload = req.body;
+
+  if (payload?.type === "transcript" && payload.transcript && payload.speaker) {
+    const message = JSON.stringify({
+      speaker: payload.speaker === "bot" ? "AI" : "Candidate",
+      text: payload.transcript,
+      callId: payload.callId,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Broadcast to all connected WebSocket clients
+    clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
+    });
+
+    console.log(`[${payload.speaker}] (${payload.callId}): ${payload.transcript}`);
+  }
+
+  res.sendStatus(200);
+});
+
+// API to trigger a voice call
+app.post("/api/call", async (req, res) => {
+  const { candidateName, phoneNumber, jobDescription, voiceId } = req.body;
+
+  if (!candidateName || !phoneNumber || !jobDescription || !voiceId) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  try {
+    const call = await vapi.calls.create({
+      assistant: {
+        name: "Recruiter AI",
+        voice: voiceId,
+        firstMessage: {
+          type: "text",
+          content: `Hello ${candidateName}, I'm calling regarding the position: ${jobDescription}. Let's start with a few questions.`,
+        },
+        model: "gpt-4o",
+        prompt: `
+You are a smart and friendly recruiter for a top-tier tech company.
+You're calling a candidate named ${candidateName} about the role: ${jobDescription}.
+
+Ask relevant questions about the candidate’s background, experience, and skills.
+Let them finish speaking before continuing. Do not interrupt. Keep it natural.
+Summarize their responses as needed, and if they sound like a good fit, thank them and end the call warmly.
+`,
+      },
+      phoneNumber: phoneNumber,
+      webhook: {
+        url: "https://recruiter-backend-pg5a.onrender.com/webhook",
+      },
+      transcriptWebhook: {
+        url: "https://recruiter-backend-pg5a.onrender.com/webhook/transcript",
+      },
+    });
+
+    console.log("📞 Call started:", call.id);
+    res.json({ success: true, callId: call.id });
+  } catch (err) {
+    console.error("❌ Error starting call:", err.message);
+    res.status(500).json({ error: "Call failed to initiate" });
+  }
+});
+
+// ========== SERVER START ==========
+server.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
