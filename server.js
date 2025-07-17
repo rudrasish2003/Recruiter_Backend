@@ -13,13 +13,14 @@ const http = require("http");
 dotenv.config();
 
 const app = express();
-const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
+const server = http.createServer(app); // create HTTP server
+const wss = new WebSocketServer({ server }); // WebSocket server
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
 
+// Track connected WebSocket clients
 const connectedClients = new Set();
 
 wss.on("connection", (ws) => {
@@ -32,7 +33,7 @@ wss.on("connection", (ws) => {
   });
 });
 
-// Multer for file uploads
+// Multer setup for file uploads
 const upload = multer({ dest: "uploads/" });
 
 const allowedVoiceIds = [
@@ -55,35 +56,32 @@ app.post("/api/call", upload.single("jobFile"), async (req, res) => {
   if (!process.env.VAPI_API_KEY || !process.env.VAPI_PHONE_NUMBER_ID || !process.env.SERVER_URL) {
     return res.status(500).json({
       success: false,
-      error: "Missing required environment variables."
+      error: "Missing environment variables. Ensure VAPI_API_KEY, VAPI_PHONE_NUMBER_ID, SERVER_URL are set."
     });
   }
 
-  // Parse JD from uploaded file
+  // Extract JD from file if not provided directly
   if (!jobDescription && jobFile) {
     try {
       const filePath = path.resolve(jobFile.path);
-      const mime = jobFile.mimetype;
-
-      if (mime === "application/pdf") {
-        const buffer = fs.readFileSync(filePath);
-        const parsed = await pdfParse(buffer);
+      if (jobFile.mimetype === "application/pdf") {
+        const dataBuffer = fs.readFileSync(filePath);
+        const parsed = await pdfParse(dataBuffer);
         jobDescription = parsed.text;
-      } else if (mime === "text/plain") {
+      } else if (jobFile.mimetype === "text/plain") {
         jobDescription = fs.readFileSync(filePath, "utf-8");
       } else {
         return res.status(400).json({
           success: false,
-          error: "Unsupported file type. Only .txt or .pdf allowed."
+          error: "Unsupported file type. Only .txt and .pdf are allowed."
         });
       }
-
-      fs.unlinkSync(filePath);
+      fs.unlinkSync(filePath); // Clean up
     } catch (err) {
-      console.error("Error parsing JD:", err.message);
+      console.error(" JD parsing error:", err.message);
       return res.status(500).json({
         success: false,
-        error: "Failed to extract job description."
+        error: "Failed to parse job description from file."
       });
     }
   }
@@ -91,6 +89,7 @@ app.post("/api/call", upload.single("jobFile"), async (req, res) => {
   const selectedVoiceId = allowedVoiceIds.includes(voiceId) ? voiceId : "Rohan";
 
   try {
+    // Create assistant
     const assistantRes = await axios.post(
       "https://api.vapi.ai/assistant",
       {
@@ -115,14 +114,16 @@ ${jobDescription}
 
 Follow these instructions carefully:
 
-- Ask one clear and concise question at a time.
+- Ask one clear and concise question at a time. Do not combine multiple questions.
 - Wait patiently for the candidate to respond fully before speaking again.
 - React naturally and politely to each answer.
 - Maintain a warm, conversational tone—never robotic or scripted.
 - Ask only job-relevant questions based on the description provided.
-- If the candidate goes off-topic or silent, gently guide them back.
-- Do not repeat questions already answered.
-- When you’ve gathered enough information, thank them and end the call.`
+- If the candidate goes off-topic or silent, gently guide them back with empathy.
+- Do not repeat questions that have already been answered.
+- When you have gathered enough information, politely thank them and end the call.
+
+You are here to make the candidate feel comfortable while collecting the information needed to assess their fit for the role.`
             }
           ]
         },
@@ -143,6 +144,7 @@ Follow these instructions carefully:
 
     const assistantId = assistantRes.data.id;
 
+    // Start call
     const callRes = await axios.post(
       "https://api.vapi.ai/call",
       {
@@ -166,31 +168,32 @@ Follow these instructions carefully:
       callId: callRes.data.id
     });
   } catch (err) {
-    console.error("Call Error:", err.response?.data || err.message);
+    console.error("Call failed:", err.response?.data || err.message);
     res.status(500).json({
       success: false,
-      error: err.response?.data || "Failed to initiate call"
+      error: err.response?.data || "Call initiation failed"
     });
   }
 });
 
-// Transcript Webhook
+// 🔁 Webhook to log all types of transcript events
 app.post("/webhook/transcript", (req, res) => {
   const payload = req.body;
 
+  // Broadcast transcript to all WebSocket clients
   if (payload?.type === "transcript" && payload.transcript && payload.speaker) {
-    const message = {
+    const msg = {
       id: Date.now().toString(),
       speaker: payload.speaker === "bot" ? "AI" : "Candidate",
       text: payload.transcript,
       timestamp: new Date().toISOString()
     };
 
-    console.log(`[${message.speaker}] ${message.text}`);
+    console.log(`[${msg.speaker}] ${msg.text}`);
 
     connectedClients.forEach((client) => {
       if (client.readyState === 1) {
-        client.send(JSON.stringify(message));
+        client.send(JSON.stringify(msg));
       }
     });
   }
@@ -198,7 +201,6 @@ app.post("/webhook/transcript", (req, res) => {
   res.sendStatus(200);
 });
 
-// Start server
 server.listen(PORT, () => {
-  console.log(`🚀 Server listening at http://localhost:${PORT}`);
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
 });
