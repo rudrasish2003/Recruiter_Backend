@@ -168,34 +168,34 @@ app.post("/webhook/transcript", (req, res) => {
     console.log(`[${payload.speaker}] (${payload.callId}): ${payload.transcript}`);
   }
 
-  // 2. Final summary
-  else if (payload?.summary && payload?.messages) {
-    console.log("\n Final Summary:");
-    // console.log(` Summary: ${payload.summary}`);
-    // console.log(` Full Transcript:\n${payload.transcript}\n`);
-    console.log(" Messages:");
-    payload.messages.forEach(msg => {
-      console.log(`[${msg.role === "bot" ? "AI" : "User"}]: ${msg.message}`);
-    });
-  }
+  // // 2. Final summary
+  // else if (payload?.summary && payload?.messages) {
+  //   console.log("\n Final Summary:");
+  //   // console.log(` Summary: ${payload.summary}`);
+  //   // console.log(` Full Transcript:\n${payload.transcript}\n`);
+  //   console.log(" Messages:");
+  //   payload.messages.forEach(msg => {
+  //     console.log(`[${msg.role === "bot" ? "AI" : "User"}]: ${msg.message}`);
+  //   });
+  // }
 
-  // 3. Conversation update
-  else if (payload?.message?.type === "conversation-update") {
-    const conversation = payload.message.conversation || [];
-    console.log("🗣️ Conversation Update:");
-    conversation.forEach(c => console.log(`[${c.role}]: ${c.content}`));
-    // if (payload.message.messages?.length) {
-    //   console.log("Raw Messages:");
-    //   payload.message.messages.forEach(m => {
-    //     console.log(`[${m.role}]: ${m.message}`);
-    //   });
-    // }
-  }
+  // // 3. Conversation update
+  // else if (payload?.message?.type === "conversation-update") {
+  //   const conversation = payload.message.conversation || [];
+  //   console.log("🗣️ Conversation Update:");
+  //   conversation.forEach(c => console.log(`[${c.role}]: ${c.content}`));
+  //   // if (payload.message.messages?.length) {
+  //   //   console.log("Raw Messages:");
+  //   //   payload.message.messages.forEach(m => {
+  //   //     console.log(`[${m.role}]: ${m.message}`);
+  //   //   });
+  //   // }
+  // }
 
-  // 4. Speech events
-  else if (payload?.message?.type === "speech-update") {
-    console.log(` Speech ${payload.message.status} (${payload.message.role})`);
-  }
+  // // 4. Speech events
+  // else if (payload?.message?.type === "speech-update") {
+  //   console.log(` Speech ${payload.message.status} (${payload.message.role})`);
+  // }
 
   // 5. Anything else
   else {
