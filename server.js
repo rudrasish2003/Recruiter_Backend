@@ -16,7 +16,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 
-// Multer setup for file uploads
 const upload = multer({ dest: "uploads/" });
 
 const allowedVoiceIds = [
@@ -43,7 +42,6 @@ app.post("/api/call", upload.single("jobFile"), async (req, res) => {
     });
   }
 
-  // Extract JD from file if not provided directly
   if (!jobDescription && jobFile) {
     try {
       const filePath = path.resolve(jobFile.path);
@@ -59,9 +57,9 @@ app.post("/api/call", upload.single("jobFile"), async (req, res) => {
           error: "Unsupported file type. Only .txt and .pdf are allowed."
         });
       }
-      fs.unlinkSync(filePath); // Clean up
+      fs.unlinkSync(filePath);
     } catch (err) {
-      console.error("❌ JD parsing error:", err.message);
+      console.error("JD parsing error:", err.message);
       return res.status(500).json({
         success: false,
         error: "Failed to parse job description from file."
@@ -72,7 +70,6 @@ app.post("/api/call", upload.single("jobFile"), async (req, res) => {
   const selectedVoiceId = allowedVoiceIds.includes(voiceId) ? voiceId : "Rohan";
 
   try {
-    // Create assistant
     const assistantRes = await axios.post(
       "https://api.vapi.ai/assistant",
       {
@@ -97,13 +94,13 @@ ${jobDescription}
 
 Follow these instructions carefully:
 
-- Ask **one clear and concise question at a time**. Do not combine multiple questions.
-- **Wait patiently** for the candidate to respond fully before speaking again. Do not interrupt or talk over them.
-- React **naturally and politely** to each answer, just as a human recruiter would.
-- Maintain a **warm, conversational tone**—never robotic or scripted.
-- Ask **only job-relevant** questions based on the description provided.
+- Ask one clear and concise question at a time. Do not combine multiple questions.
+- Wait patiently for the candidate to respond fully before speaking again. Do not interrupt or talk over them.
+- React naturally and politely to each answer, just as a human recruiter would.
+- Maintain a warm, conversational tone—never robotic or scripted.
+- Ask only job-relevant questions based on the description provided.
 - If the candidate goes off-topic or silent, gently guide them back with empathy.
-- **Do not repeat** questions that have already been answered.
+- Do not repeat questions that have already been answered.
 - When you have gathered enough information, politely thank them and end the call.
 
 You are here to make the candidate feel comfortable while collecting the information needed to assess their fit for the role.`
@@ -127,7 +124,6 @@ You are here to make the candidate feel comfortable while collecting the informa
 
     const assistantId = assistantRes.data.id;
 
-    // Start call
     const callRes = await axios.post(
       "https://api.vapi.ai/call",
       {
@@ -151,7 +147,7 @@ You are here to make the candidate feel comfortable while collecting the informa
       callId: callRes.data.id
     });
   } catch (err) {
-    console.error("❌ Call failed:", err.response?.data || err.message);
+    console.error("Call failed:", err.response?.data || err.message);
     res.status(500).json({
       success: false,
       error: err.response?.data || "Call initiation failed"
@@ -159,53 +155,22 @@ You are here to make the candidate feel comfortable while collecting the informa
   }
 });
 
-// 🔁 Webhook to log all types of transcript events
+// Only log the final conversation messages from user and AI
 app.post("/webhook/transcript", (req, res) => {
   const payload = req.body;
 
-  // 1. Real-time streaming
-  if (payload?.type === "transcript" && payload.transcript && payload.speaker) {
-    console.log(`🟢 [${payload.speaker}] (${payload.callId}): ${payload.transcript}`);
-  }
-
-  // 2. Final summary
-  else if (payload?.summary && payload?.messages) {
-    console.log("\n📋 Final Summary:");
-    console.log(`📝 Summary: ${payload.summary}`);
-    console.log(`📜 Full Transcript:\n${payload.transcript}\n`);
-    console.log("💬 Messages:");
+  if (payload?.summary && payload?.messages?.length) {
+    console.log("Final Conversation Log:");
     payload.messages.forEach(msg => {
-      console.log(`[${msg.role === "bot" ? "AI" : "User"}]: ${msg.message}`);
+      if (msg.role === "bot" || msg.role === "user") {
+        console.log(`[${msg.role === "bot" ? "AI" : "User"}]: ${msg.message}`);
+      }
     });
-  }
-
-  // 3. Conversation update
-  else if (payload?.message?.type === "conversation-update") {
-    const conversation = payload.message.conversation || [];
-    console.log("🗣️ Conversation Update:");
-    conversation.forEach(c => console.log(`[${c.role}]: ${c.content}`));
-    if (payload.message.messages?.length) {
-      console.log("📨 Raw Messages:");
-      payload.message.messages.forEach(m => {
-        console.log(`[${m.role}]: ${m.message}`);
-      });
-    }
-  }
-
-  // 4. Speech events
-  else if (payload?.message?.type === "speech-update") {
-    console.log(`🎙️ Speech ${payload.message.status} (${payload.message.role})`);
-  }
-
-  // 5. Anything else
-  else {
-    console.log("📡 Unknown Transcript Event:");
-    console.dir(payload, { depth: null });
   }
 
   res.sendStatus(200);
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
+  console.log(`Server running at http://localhost:${PORT}`);
 });
