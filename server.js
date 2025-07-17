@@ -163,34 +163,49 @@ You are here to make the candidate feel comfortable while collecting the informa
 app.post("/webhook/transcript", (req, res) => {
   const payload = req.body;
 
-  // 1. Real-time streaming transcript (each word/line as spoken)
+  // 1. Real-time streaming
   if (payload?.type === "transcript" && payload.transcript && payload.speaker) {
-    const speaker = payload.speaker === "bot" ? "Bot" : "User";
-    const text = payload.transcript.trim();
-    if (text) console.log(`${speaker}: ${text}`);
+    console.log(`[${payload.speaker}] (${payload.callId}): ${payload.transcript}`);
   }
 
-  // 2. Final transcript summary after call ends
+  // 2. Final summary
   else if (payload?.summary && payload?.messages) {
-    console.log("\n--- Final Summary ---");
-    console.log(`Summary: ${payload.summary}\n`);
-    console.log("Transcript:");
-
-    payload.messages.forEach((msg) => {
-      const speaker = msg.role === "bot" ? "Bot" : "User";
-      if (msg.message?.trim()) {
-        console.log(`${speaker}: ${msg.message.trim()}`);
-      }
+    console.log("\n Final Summary:");
+    // console.log(` Summary: ${payload.summary}`);
+    // console.log(` Full Transcript:\n${payload.transcript}\n`);
+    console.log(" Messages:");
+    payload.messages.forEach(msg => {
+      console.log(`[${msg.role === "bot" ? "AI" : "User"}]: ${msg.message}`);
     });
-
-    console.log("\n--- End of Summary ---");
   }
 
-  // 3. Ignore conversation updates, speech status, or unknown types
+  // 3. Conversation update
+  else if (payload?.message?.type === "conversation-update") {
+    const conversation = payload.message.conversation || [];
+    console.log("🗣️ Conversation Update:");
+    conversation.forEach(c => console.log(`[${c.role}]: ${c.content}`));
+    // if (payload.message.messages?.length) {
+    //   console.log("Raw Messages:");
+    //   payload.message.messages.forEach(m => {
+    //     console.log(`[${m.role}]: ${m.message}`);
+    //   });
+    // }
+  }
+
+  // 4. Speech events
+  else if (payload?.message?.type === "speech-update") {
+    console.log(` Speech ${payload.message.status} (${payload.message.role})`);
+  }
+
+  // 5. Anything else
   else {
-    // Silent fail: no noisy logs
+    console.log(" Unknown Transcript Event:");
+    console.dir(payload, { depth: null });
   }
 
   res.sendStatus(200);
 });
 
+app.listen(PORT, () => {
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
+});
