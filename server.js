@@ -154,7 +154,7 @@ Follow these instructions carefully:
         },
         assistantId,
         phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
-        transcriptionWebhookUrl: `${process.env.SERVER_URL}/webhook/transcript` // ✅ Added
+        WebhookUrl: `${process.env.SERVER_URL}/webhook/transcript` // ✅ Added
       },
       {
         headers: {
