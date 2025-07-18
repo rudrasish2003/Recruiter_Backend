@@ -115,8 +115,12 @@ You are here to make the candidate feel comfortable while collecting the informa
           language: "en"
         },
         server: {
-          url: `${process.env.SERVER_URL}/webhook/transcript`
+          url: `${process.env.SERVER_URL}/webhook/transcript`,
+          events: {
+    url: `${process.env.SERVER_URL}/webhook/call-status`
+  }
         }
+        
       },
       {
         headers: {
@@ -219,6 +223,27 @@ app.post("/webhook/transcript", (req, res) => {
 // ✅ Frontend POST triggers transcript fetch
 app.post("/transcript", (req, res) => {
   res.json({ transcript: transcriptLog });
+});
+
+let currentCallStatus = 'idle'; // Tracks latest status
+
+app.post("/webhook/call-status", (req, res) => {
+  const { event, call } = req.body;
+
+  console.log(`📞 Call Event Received: ${event}`);
+
+  if (event === "call-started") {
+    currentCallStatus = "in-progress";
+    console.log("✅ Call started");
+  } else if (event === "call-ended") {
+    currentCallStatus = "ended";
+    console.log("🔚 Call ended");
+  } else if (event === "call-failed") {
+    currentCallStatus = "failed";
+    console.log("❌ Call failed");
+  }
+
+  res.sendStatus(200);
 });
 
 
