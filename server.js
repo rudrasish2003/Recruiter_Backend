@@ -166,13 +166,24 @@ const callTranscripts = {}; // Structure: { [callId]: { messages: [], seen: Set 
 app.route("/webhook/transcript")
   .post((req, res) => {
     const payload = req.body;
-    const callId = payload?.call?.id;
+
+    // Log full payload for debugging
+    console.log("🌐 Incoming Webhook Payload:", JSON.stringify(payload, null, 2));
+
+    // Try to extract callId from multiple locations
+    const callId =
+      payload?.call?.id ||
+      payload?.conversation_id ||
+      payload?.conversationId ||
+      payload?.id ||
+      null;
 
     if (!callId) {
-      console.warn("No callId found in webhook payload.");
+      console.warn("⚠️ No callId found in webhook payload.");
       return res.sendStatus(200);
     }
 
+    // Initialize if new callId
     if (!callTranscripts[callId]) {
       callTranscripts[callId] = {
         messages: [],
@@ -196,19 +207,23 @@ app.route("/webhook/transcript")
       }
     };
 
-    // Handle standard transcript
+    // Handle standard transcript message
     if (payload?.type === "transcript" && payload.transcript && payload.speaker) {
       logLine(payload.speaker, payload.transcript);
     }
 
     // Handle final summary
-    else if (payload?.summary && payload?.messages) {
-      payload.messages.forEach(m => logLine(m.role, m.message));
+    else if (payload?.summary && Array.isArray(payload.messages)) {
+      payload.messages.forEach(m => {
+        if (m.role && m.message) logLine(m.role, m.message);
+      });
     }
 
     // Handle conversation updates
     else if (payload?.message?.type === "conversation-update") {
-      payload.message.messages?.forEach(m => logLine(m.role, m.message));
+      payload.message.messages?.forEach(m => {
+        if (m.role && m.message) logLine(m.role, m.message);
+      });
     }
 
     res.sendStatus(200);
@@ -229,7 +244,6 @@ app.route("/webhook/transcript")
       transcript: callTranscripts[callId].messages
     });
   });
-
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
