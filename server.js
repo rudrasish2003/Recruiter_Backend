@@ -161,19 +161,25 @@ You are here to make the candidate feel comfortable while collecting the informa
 
 const loggedMessages = new Set();
 
+const transcriptLog = [];
+const loggedMessages = new Set();
+
+// 🎯 Store transcript from webhook
 app.post("/webhook/transcript", (req, res) => {
   const payload = req.body;
 
-  // 1. Real-time transcript messages
+  // Handle transcript type messages
   if (payload?.type === "transcript" && payload.transcript && payload.speaker) {
     const key = `${payload.speaker}:${payload.transcript}`;
     if (!loggedMessages.has(key) && ["user", "bot"].includes(payload.speaker)) {
-      console.log(`[${payload.speaker.toUpperCase()}]: ${payload.transcript}`);
+      const line = `[${payload.speaker.toUpperCase()}]: ${payload.transcript}`;
+      console.log(line);
+      transcriptLog.push(line);
       loggedMessages.add(key);
     }
   }
 
-  // 2. Final summary (skip prompt-style content)
+  // Handle final summary messages
   else if (payload?.summary && payload?.messages) {
     payload.messages.forEach(msg => {
       const key = `${msg.role}:${msg.message}`;
@@ -182,13 +188,15 @@ app.post("/webhook/transcript", (req, res) => {
         !loggedMessages.has(key) &&
         !msg.message.includes("You are a professional and friendly AI recruiter")
       ) {
-        console.log(`[${msg.role.toUpperCase()}]: ${msg.message}`);
+        const line = `[${msg.role.toUpperCase()}]: ${msg.message}`;
+        console.log(line);
+        transcriptLog.push(line);
         loggedMessages.add(key);
       }
     });
   }
 
-  // 3. Conversation update messages
+  // Handle conversation update events
   else if (payload?.message?.type === "conversation-update") {
     payload.message.messages?.forEach(m => {
       const key = `${m.role}:${m.message}`;
@@ -197,7 +205,9 @@ app.post("/webhook/transcript", (req, res) => {
         !loggedMessages.has(key) &&
         !m.message.includes("You are a professional and friendly AI recruiter")
       ) {
-        console.log(`[${m.role.toUpperCase()}]: ${m.message}`);
+        const line = `[${m.role.toUpperCase()}]: ${m.message}`;
+        console.log(line);
+        transcriptLog.push(line);
         loggedMessages.add(key);
       }
     });
@@ -206,6 +216,10 @@ app.post("/webhook/transcript", (req, res) => {
   res.sendStatus(200);
 });
 
+// ✅ Frontend POST triggers transcript fetch
+app.post("/transcript", (req, res) => {
+  res.json({ transcript: transcriptLog });
+});
 
 
 app.listen(PORT, () => {
