@@ -159,7 +159,7 @@ You are here to make the candidate feel comfortable while collecting the informa
   }
 });
 
-const loggedMessages = new Set();
+
 
 const transcriptLog = [];
 const loggedMessages = new Set();
