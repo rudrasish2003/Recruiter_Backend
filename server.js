@@ -116,10 +116,7 @@ You are here to make the candidate feel comfortable while collecting the informa
         },
         server: {
           url: `${process.env.SERVER_URL}/webhook/transcript`,
-          events: {
-    url: `${process.env.SERVER_URL}/webhook/call-status`
-  }
-        }
+          url: `${process.env.SERVER_URL}/webhook/call-status`    }
         
       },
       {
