@@ -161,89 +161,77 @@ You are here to make the candidate feel comfortable while collecting the informa
 
 
 
-const callTranscripts = {}; // Structure: { [callId]: { messages: [], seen: Set } }
+const transcriptMap = {}; // { callId: { messages: [], seen: Set } }
 
-app.route("/webhook/transcript")
-  .post((req, res) => {
-    const payload = req.body;
+// 🎯 Store transcript from webhook
+app.post("/webhook/transcript", (req, res) => {
+  const payload = req.body;
+  const callId = payload?.call?.id;
 
-    // Log full payload for debugging
-    console.log("🌐 Incoming Webhook Payload:", JSON.stringify(payload, null, 2));
+  if (!callId) {
+    console.warn("⚠️ No callId in webhook payload.");
+    return res.sendStatus(200);
+  }
 
-    // Try to extract callId from multiple locations
-    const callId =
-      payload?.call?.id ||
-      payload?.conversation_id ||
-      payload?.conversationId ||
-      payload?.id ||
-      null;
-
-    if (!callId) {
-      console.warn("⚠️ No callId found in webhook payload.");
-      return res.sendStatus(200);
-    }
-
-    // Initialize if new callId
-    if (!callTranscripts[callId]) {
-      callTranscripts[callId] = {
-        messages: [],
-        seen: new Set()
-      };
-    }
-
-    const { messages, seen } = callTranscripts[callId];
-
-    const logLine = (role, message) => {
-      const key = `${role}:${message}`;
-      if (
-        ["user", "bot"].includes(role) &&
-        !seen.has(key) &&
-        !message.includes("You are a professional and friendly AI recruiter")
-      ) {
-        const line = `[${role.toUpperCase()}]: ${message}`;
-        console.log(line);
-        messages.push({ role, message });
-        seen.add(key);
-      }
+  // Initialize structure for this callId
+  if (!transcriptMap[callId]) {
+    transcriptMap[callId] = {
+      messages: [],
+      seen: new Set()
     };
+  }
 
-    // Handle standard transcript message
-    if (payload?.type === "transcript" && payload.transcript && payload.speaker) {
-      logLine(payload.speaker, payload.transcript);
+  const { messages, seen } = transcriptMap[callId];
+
+  const logLine = (role, message) => {
+    const key = `${role}:${message}`;
+    if (
+      ["user", "bot"].includes(role) &&
+      !seen.has(key) &&
+      !message.includes("You are a professional and friendly AI recruiter")
+    ) {
+      const line = `[${role.toUpperCase()}]: ${message}`;
+      console.log(line);
+      messages.push({ role, message });
+      seen.add(key);
     }
+  };
 
-    // Handle final summary
-    else if (payload?.summary && Array.isArray(payload.messages)) {
-      payload.messages.forEach(m => {
-        if (m.role && m.message) logLine(m.role, m.message);
-      });
-    }
+  // Type: standard transcript
+  if (payload?.type === "transcript" && payload.transcript && payload.speaker) {
+    logLine(payload.speaker, payload.transcript);
+  }
 
-    // Handle conversation updates
-    else if (payload?.message?.type === "conversation-update") {
-      payload.message.messages?.forEach(m => {
-        if (m.role && m.message) logLine(m.role, m.message);
-      });
-    }
+  // Type: summary
+  else if (payload?.summary && payload?.messages) {
+    payload.messages.forEach(m => logLine(m.role, m.message));
+  }
 
-    res.sendStatus(200);
-  })
+  // Type: conversation-update
+  else if (payload?.message?.type === "conversation-update") {
+    payload.message.messages?.forEach(m => logLine(m.role, m.message));
+  }
 
-  .get((req, res) => {
-    const callId = req.query.callId;
+  res.sendStatus(200);
+});
 
-    if (!callId || !callTranscripts[callId]) {
-      return res.status(404).json({
-        success: false,
-        error: "Transcript not found for this callId"
-      });
-    }
 
-    res.json({
-      success: true,
-      transcript: callTranscripts[callId].messages
+// ✅ GET route for frontend polling: /transcript?callId=abc123
+app.get("/transcript", (req, res) => {
+  const callId = req.query.callId;
+
+  if (!callId || !transcriptMap[callId]) {
+    return res.status(404).json({
+      success: false,
+      error: "Transcript not found for this callId"
     });
+  }
+
+  res.json({
+    success: true,
+    transcript: transcriptMap[callId].messages
   });
+});
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
