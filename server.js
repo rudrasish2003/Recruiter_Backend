@@ -159,65 +159,38 @@ You are here to make the candidate feel comfortable while collecting the informa
   }
 });
 
-// 🔁 Webhook to log all types of transcript events
 app.post("/webhook/transcript", (req, res) => {
   const payload = req.body;
 
   // 1. Real-time transcript
   if (payload?.type === "transcript" && payload.transcript && payload.speaker) {
-    console.log(`[TRANSCRIPT] ${payload.speaker}: ${payload.transcript}`);
+    if (payload.speaker === "user" || payload.speaker === "bot") {
+      console.log(`[${payload.speaker.toUpperCase()}]: ${payload.transcript}`);
+    }
   }
 
-  // 2. Final summary
+  // 2. Final Summary with messages (if needed)
   else if (payload?.summary && payload?.messages) {
-    console.log("✅ Final Summary:");
-    console.log(`📝 Summary: ${payload.summary}`);
-    console.log("💬 Messages:");
     payload.messages.forEach(msg => {
-      if (msg.role === "bot" || msg.role === "user") {
+      if (msg.role === "user" || msg.role === "bot") {
         console.log(`[${msg.role.toUpperCase()}]: ${msg.message}`);
       }
     });
   }
 
-  // 3. Conversation update (filtering out system instructions)
+  // 3. Conversation updates — print only clean user/bot lines
   else if (payload?.message?.type === "conversation-update") {
-    const conversation = payload.message.conversation || [];
-
-    console.log("🔁 Conversation Update:");
-    conversation.forEach(msg => {
-      const isAssistantSystemMsg =
-        msg.role === "assistant" &&
-        msg.content?.includes("You are a professional and friendly AI recruiter");
-
-      if (!isAssistantSystemMsg) {
-        console.log(`[${msg.role}]: ${msg.content}`);
-      }
-    });
-
-    // Filter & print only real dialogue messages
-    if (payload.message.messages?.length) {
-      console.log("📦 Dialogue Messages:");
+    if (Array.isArray(payload.message.messages)) {
       payload.message.messages.forEach(m => {
-        const isInstruction =
-          m.message?.includes("You are a professional and friendly AI recruiter") ||
-          m.message?.includes("Follow these instructions");
+        const isSystem =
+          m.role === "assistant" &&
+          m.message?.includes("You are a professional and friendly AI recruiter");
 
-        if ((m.role === "bot" || m.role === "user") && !isInstruction) {
+        if ((m.role === "bot" || m.role === "user") && !isSystem) {
           console.log(`[${m.role.toUpperCase()}]: ${m.message}`);
         }
       });
     }
-  }
-
-  // 4. Speech status
-  else if (payload?.message?.type === "speech-update") {
-    console.log(`🎤 Speech ${payload.message.status} (${payload.message.role})`);
-  }
-
-  // 5. Fallback
-  else {
-    console.log("⚠️ Skipped unknown event.");
   }
 
   res.sendStatus(200);
