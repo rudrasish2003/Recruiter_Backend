@@ -167,6 +167,8 @@ const loggedMessages = new Set();
 app.post("/webhook/transcript", (req, res) => {
   const payload = req.body;
 
+  console.log("📦 Received Transcript Payload:", JSON.stringify(req.body, null, 2));
+
   // Try to extract callId from known fields
   const callId = payload.callId || payload.call_id || payload.sessionId || payload.meta?.callId || payload.meta?.sessionId;
 
