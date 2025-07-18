@@ -159,69 +159,73 @@ You are here to make the candidate feel comfortable while collecting the informa
   }
 });
 
+const transcriptLogs = new Map(); // key: callId, value: array of lines
+const loggedMessages = new Set(); // prevent duplicates
 
-
-const transcriptLog = [];
-const loggedMessages = new Set();
-
-// 🎯 Store transcript from webhook
-app.post("/webhook/transcript", (req, res) => {
+// POST Webhook Handler
+app.post("/webhook/transcript", async (req, res) => {
   const payload = req.body;
+  const callId = payload?.call?.id;
 
-  // Handle transcript type messages
-  if (payload?.type === "transcript" && payload.transcript && payload.speaker) {
-    const key = `${payload.speaker}:${payload.transcript}`;
+  if (!callId) {
+    return res.status(400).json({ success: false, message: "Missing callId" });
+  }
+
+  // Handle 'transcript' message
+  if (payload.type === "transcript" && payload.transcript && payload.speaker) {
+    const key = `${callId}:${payload.speaker}:${payload.transcript}`;
+
     if (!loggedMessages.has(key) && ["user", "bot"].includes(payload.speaker)) {
       const line = `[${payload.speaker.toUpperCase()}]: ${payload.transcript}`;
-      console.log(line);
-      transcriptLog.push(line);
+      if (!transcriptLogs.has(callId)) {
+        transcriptLogs.set(callId, []);
+      }
+      transcriptLogs.get(callId).push(line);
       loggedMessages.add(key);
+      console.log(`[${callId}] ${line}`);
     }
   }
 
-  // Handle final summary messages
-  else if (payload?.summary && payload?.messages) {
-    payload.messages.forEach(msg => {
-      const key = `${msg.role}:${msg.message}`;
-      if (
-        ["user", "bot"].includes(msg.role) &&
-        !loggedMessages.has(key) &&
-        !msg.message.includes("You are a professional and friendly AI recruiter")
-      ) {
-        const line = `[${msg.role.toUpperCase()}]: ${msg.message}`;
-        console.log(line);
-        transcriptLog.push(line);
-        loggedMessages.add(key);
-      }
-    });
+  // Handle 'summary' message
+  if (payload.type === "summary" && payload.summary) {
+    const line = `[SUMMARY]: ${payload.summary}`;
+    if (!transcriptLogs.has(callId)) {
+      transcriptLogs.set(callId, []);
+    }
+    transcriptLogs.get(callId).push(line);
+    console.log(`[${callId}] ${line}`);
   }
 
-  // Handle conversation update events
-  else if (payload?.message?.type === "conversation-update") {
-    payload.message.messages?.forEach(m => {
-      const key = `${m.role}:${m.message}`;
-      if (
-        ["user", "bot"].includes(m.role) &&
-        !loggedMessages.has(key) &&
-        !m.message.includes("You are a professional and friendly AI recruiter")
-      ) {
-        const line = `[${m.role.toUpperCase()}]: ${m.message}`;
-        console.log(line);
-        transcriptLog.push(line);
-        loggedMessages.add(key);
+  // Handle 'conversation-update' with message content
+  if (payload.type === "conversation-update" && payload.message?.content) {
+    const speaker = payload.message.role || "unknown";
+    const message = payload.message.content;
+    const key = `${callId}:${speaker}:${message}`;
+
+    if (!loggedMessages.has(key)) {
+      const line = `[${speaker.toUpperCase()}]: ${message}`;
+      if (!transcriptLogs.has(callId)) {
+        transcriptLogs.set(callId, []);
       }
-    });
+      transcriptLogs.get(callId).push(line);
+      loggedMessages.add(key);
+      console.log(`[${callId}] ${line}`);
+    }
   }
 
-  res.sendStatus(200);
+  return res.status(200).json({ success: true, message: "Webhook received" });
 });
 
-// ✅ Frontend POST triggers transcript fetch
-app.get("/transcript", (req, res) => {
-  res.json({ transcript: transcriptLog });
+// GET Transcript by Call ID
+app.get("/transcript/:callId", (req, res) => {
+  const callId = req.params.callId;
+  const transcript = transcriptLogs.get(callId) || [];
+
+  return res.json({
+    callId,
+    transcript,
+  });
 });
-
-
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
