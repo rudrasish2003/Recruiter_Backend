@@ -169,7 +169,7 @@ app.post("/webhook/transcript", (req, res) => {
 
   if (!callId) {
     console.warn("⚠️ No callId in webhook payload.");
-    console.log("📦 Payload:", JSON.stringify(req.body, null, 2));
+   
     return res.sendStatus(200);
   }
 
