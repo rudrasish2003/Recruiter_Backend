@@ -221,6 +221,48 @@ app.get("/transcript", (req, res) => {
   res.json({ transcript: transcriptLog });
 });
 
+app.get("/api/call/status/:callId", async (req, res) => {
+  const { callId } = req.params;
+
+  if (!callId) {
+    return res.status(400).json({
+      success: false,
+      error: "Missing callId"
+    });
+  }
+
+  if (!process.env.VAPI_API_KEY) {
+    return res.status(500).json({
+      success: false,
+      error: "Missing VAPI_API_KEY in environment variables"
+    });
+  }
+
+  try {
+    const response = await axios.get(`https://api.vapi.ai/call/${callId}`, {
+      headers: {
+        Authorization: `Bearer ${process.env.VAPI_API_KEY}`
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      callId: response.data.id,
+      status: response.data.status,   // e.g. queued, in-progress, completed
+      startedAt: response.data.startedAt,
+      endedAt: response.data.endedAt,
+      direction: response.data.direction
+    });
+
+  } catch (error) {
+    console.error("Error fetching call status:", error.response?.data || error.message);
+    res.status(500).json({
+      success: false,
+      error: error.response?.data || "Failed to retrieve call status"
+    });
+  }
+});
+
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
