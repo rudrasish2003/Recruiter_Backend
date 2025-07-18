@@ -163,43 +163,28 @@ You are here to make the candidate feel comfortable while collecting the informa
 app.post("/webhook/transcript", (req, res) => {
   const payload = req.body;
 
-  // 1. Real-time streaming
+  // 1. Real-time streaming transcripts
   if (payload?.type === "transcript" && payload.transcript && payload.speaker) {
-    console.log(`[${payload.speaker}] (${payload.callId}): ${payload.transcript}`);
+    console.log(`📝 [${payload.speaker}] (${payload.callId}): ${payload.transcript}`);
   }
 
   // 2. Final summary
-  else if (payload?.summary && payload?.messages) {
-    console.log("\n Final Summary:");
-    console.log(` Summary: ${payload.summary}`);
-    console.log(` Full Transcript:\n${payload.transcript}\n`);
-    console.log(" Messages:");
-    payload.messages.forEach(msg => {
-      console.log(`[${msg.role === "bot" ? "AI" : "User"}]: ${msg.message}`);
+  else if (payload?.summary && payload?.transcript) {
+    console.log("\n✅ Final Call Summary:");
+    console.log(`Summary: ${payload.summary}`);
+    console.log(`Transcript:\n${payload.transcript}`);
+  }
+
+  // 3. Optional: Catch other message types
+  else if (payload?.message?.type === "conversation-update") {
+    console.log("🔄 Conversation Update:");
+    payload.message.conversation?.forEach(c => {
+      console.log(`[${c.role}]: ${c.content}`);
     });
   }
 
-  // 3. Conversation update
-  else if (payload?.message?.type === "conversation-update") {
-    const conversation = payload.message.conversation || [];
-    console.log("🗣️ Conversation Update:");
-    conversation.forEach(c => console.log(`[${c.role}]: ${c.content}`));
-    if (payload.message.messages?.length) {
-      console.log("Raw Messages:");
-      payload.message.messages.forEach(m => {
-        console.log(`[${m.role}]: ${m.message}`);
-      });
-    }
-  }
-
-  // 4. Speech events
-  else if (payload?.message?.type === "speech-update") {
-    console.log(` Speech ${payload.message.status} (${payload.message.role})`);
-  }
-
-  // 5. Anything else
   else {
-    console.log(" Unknown Transcript Event:");
+    console.log("ℹ️ Unknown or Unhandled Payload:");
     console.dir(payload, { depth: null });
   }
 
