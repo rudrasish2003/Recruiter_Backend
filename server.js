@@ -163,52 +163,61 @@ You are here to make the candidate feel comfortable while collecting the informa
 app.post("/webhook/transcript", (req, res) => {
   const payload = req.body;
 
-  // 1. Real-time transcript messages
+  // 1. Real-time transcript
   if (payload?.type === "transcript" && payload.transcript && payload.speaker) {
-    console.log(`[TRANSCRIPT] Speaker: ${payload.speaker} | Call ID: ${payload.callId}`);
-    console.log(`→ ${payload.transcript}`);
+    console.log(`[TRANSCRIPT] ${payload.speaker}: ${payload.transcript}`);
   }
 
-  // 2. Final summary from Vapi
+  // 2. Final summary
   else if (payload?.summary && payload?.messages) {
-    console.log("✅ Final Summary Received");
+    console.log("✅ Final Summary:");
     console.log(`📝 Summary: ${payload.summary}`);
-    console.log(`📜 Full Transcript:\n${payload.transcript}\n`);
     console.log("💬 Messages:");
     payload.messages.forEach(msg => {
-      console.log(`[${msg.role === "bot" ? "AI" : "User"}]: ${msg.message}`);
+      if (msg.role === "bot" || msg.role === "user") {
+        console.log(`[${msg.role.toUpperCase()}]: ${msg.message}`);
+      }
     });
   }
 
-  // 3. Conversation update messages
+  // 3. Conversation update (filtering out system instructions)
   else if (payload?.message?.type === "conversation-update") {
     const conversation = payload.message.conversation || [];
-    console.log("🔁 Conversation Update:");
-    conversation.forEach(c => console.log(`[${c.role}]: ${c.content}`));
 
+    console.log("🔁 Conversation Update:");
+    conversation.forEach(msg => {
+      const isAssistantSystemMsg =
+        msg.role === "assistant" &&
+        msg.content?.includes("You are a professional and friendly AI recruiter");
+
+      if (!isAssistantSystemMsg) {
+        console.log(`[${msg.role}]: ${msg.content}`);
+      }
+    });
+
+    // Filter & print only real dialogue messages
     if (payload.message.messages?.length) {
-      console.log("📦 Raw Messages:");
+      console.log("📦 Dialogue Messages:");
       payload.message.messages.forEach(m => {
-        console.log(`[${m.role}]: ${m.message}`);
+        const isInstruction =
+          m.message?.includes("You are a professional and friendly AI recruiter") ||
+          m.message?.includes("Follow these instructions");
+
+        if ((m.role === "bot" || m.role === "user") && !isInstruction) {
+          console.log(`[${m.role.toUpperCase()}]: ${m.message}`);
+        }
       });
     }
   }
 
-  // 4. Speech status updates
+  // 4. Speech status
   else if (payload?.message?.type === "speech-update") {
-    console.log(`🎤 Speech Status: ${payload.message.status} (${payload.message.role})`);
+    console.log(`🎤 Speech ${payload.message.status} (${payload.message.role})`);
   }
 
-  // 5. Unknown events — minimal log only
+  // 5. Fallback
   else {
-    console.log("⚠️ Unrecognized event type or structure.");
-    if (payload?.type) {
-      console.log(`Event type: ${payload.type}`);
-    } else if (payload?.message?.type) {
-      console.log(`Message type: ${payload.message.type}`);
-    } else {
-      console.log("Structure not recognized.");
-    }
+    console.log("⚠️ Skipped unknown event.");
   }
 
   res.sendStatus(200);
