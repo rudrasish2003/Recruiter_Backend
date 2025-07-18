@@ -161,66 +161,74 @@ You are here to make the candidate feel comfortable while collecting the informa
 
 
 
-const transcriptLog = [];
-const loggedMessages = new Set();
+const callTranscripts = {}; // Structure: { [callId]: { messages: [], seen: Set } }
 
-// 🎯 Store transcript from webhook
-app.post("/webhook/transcript", (req, res) => {
-  const payload = req.body;
+app.route("/webhook/transcript")
+  .post((req, res) => {
+    const payload = req.body;
+    const callId = payload?.call?.id;
 
-  // Handle transcript type messages
-  if (payload?.type === "transcript" && payload.transcript && payload.speaker) {
-    const key = `${payload.speaker}:${payload.transcript}`;
-    if (!loggedMessages.has(key) && ["user", "bot"].includes(payload.speaker)) {
-      const line = `[${payload.speaker.toUpperCase()}]: ${payload.transcript}`;
-      console.log(line);
-      transcriptLog.push(line);
-      loggedMessages.add(key);
+    if (!callId) {
+      console.warn("No callId found in webhook payload.");
+      return res.sendStatus(200);
     }
-  }
 
-  // Handle final summary messages
-  else if (payload?.summary && payload?.messages) {
-    payload.messages.forEach(msg => {
-      const key = `${msg.role}:${msg.message}`;
+    if (!callTranscripts[callId]) {
+      callTranscripts[callId] = {
+        messages: [],
+        seen: new Set()
+      };
+    }
+
+    const { messages, seen } = callTranscripts[callId];
+
+    const logLine = (role, message) => {
+      const key = `${role}:${message}`;
       if (
-        ["user", "bot"].includes(msg.role) &&
-        !loggedMessages.has(key) &&
-        !msg.message.includes("You are a professional and friendly AI recruiter")
+        ["user", "bot"].includes(role) &&
+        !seen.has(key) &&
+        !message.includes("You are a professional and friendly AI recruiter")
       ) {
-        const line = `[${msg.role.toUpperCase()}]: ${msg.message}`;
+        const line = `[${role.toUpperCase()}]: ${message}`;
         console.log(line);
-        transcriptLog.push(line);
-        loggedMessages.add(key);
+        messages.push({ role, message });
+        seen.add(key);
       }
+    };
+
+    // Handle standard transcript
+    if (payload?.type === "transcript" && payload.transcript && payload.speaker) {
+      logLine(payload.speaker, payload.transcript);
+    }
+
+    // Handle final summary
+    else if (payload?.summary && payload?.messages) {
+      payload.messages.forEach(m => logLine(m.role, m.message));
+    }
+
+    // Handle conversation updates
+    else if (payload?.message?.type === "conversation-update") {
+      payload.message.messages?.forEach(m => logLine(m.role, m.message));
+    }
+
+    res.sendStatus(200);
+  })
+
+  .get((req, res) => {
+    const callId = req.query.callId;
+
+    if (!callId || !callTranscripts[callId]) {
+      return res.status(404).json({
+        success: false,
+        error: "Transcript not found for this callId"
+      });
+    }
+
+    res.json({
+      success: true,
+      transcript: callTranscripts[callId].messages
     });
-  }
-
-  // Handle conversation update events
-  else if (payload?.message?.type === "conversation-update") {
-    payload.message.messages?.forEach(m => {
-      const key = `${m.role}:${m.message}`;
-      if (
-        ["user", "bot"].includes(m.role) &&
-        !loggedMessages.has(key) &&
-        !m.message.includes("You are a professional and friendly AI recruiter")
-      ) {
-        const line = `[${m.role.toUpperCase()}]: ${m.message}`;
-        console.log(line);
-        transcriptLog.push(line);
-        loggedMessages.add(key);
-      }
-    });
-  }
-
-  res.sendStatus(200);
-});
-
-// ✅ Frontend POST triggers transcript fetch
-app.post("/transcript", (req, res) => {
-  res.json({ transcript: transcriptLog });
-});
-
+  });
 
 
 app.listen(PORT, () => {
