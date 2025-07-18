@@ -159,40 +159,48 @@ You are here to make the candidate feel comfortable while collecting the informa
   }
 });
 
+const loggedMessages = new Set();
+
 app.post("/webhook/transcript", (req, res) => {
   const payload = req.body;
 
-  // 1. Live transcripts (streaming messages)
+  // 1. Real-time transcript messages
   if (payload?.type === "transcript" && payload.transcript && payload.speaker) {
-    if (["user", "bot"].includes(payload.speaker)) {
+    const key = `${payload.speaker}:${payload.transcript}`;
+    if (!loggedMessages.has(key) && ["user", "bot"].includes(payload.speaker)) {
       console.log(`[${payload.speaker.toUpperCase()}]: ${payload.transcript}`);
+      loggedMessages.add(key);
     }
   }
 
-  // 2. Final message log (summary)
+  // 2. Final summary (skip prompt-style content)
   else if (payload?.summary && payload?.messages) {
     payload.messages.forEach(msg => {
+      const key = `${msg.role}:${msg.message}`;
       if (
-        (msg.role === "user" || msg.role === "bot") &&
+        ["user", "bot"].includes(msg.role) &&
+        !loggedMessages.has(key) &&
         !msg.message.includes("You are a professional and friendly AI recruiter")
       ) {
         console.log(`[${msg.role.toUpperCase()}]: ${msg.message}`);
+        loggedMessages.add(key);
       }
     });
   }
 
-  // 3. Conversation updates (streamed full messages)
+  // 3. Conversation update messages
   else if (payload?.message?.type === "conversation-update") {
-    if (Array.isArray(payload.message.messages)) {
-      payload.message.messages.forEach(m => {
-        if (
-          (m.role === "user" || m.role === "bot") &&
-          !m.message.includes("You are a professional and friendly AI recruiter")
-        ) {
-          console.log(`[${m.role.toUpperCase()}]: ${m.message}`);
-        }
-      });
-    }
+    payload.message.messages?.forEach(m => {
+      const key = `${m.role}:${m.message}`;
+      if (
+        ["user", "bot"].includes(m.role) &&
+        !loggedMessages.has(key) &&
+        !m.message.includes("You are a professional and friendly AI recruiter")
+      ) {
+        console.log(`[${m.role.toUpperCase()}]: ${m.message}`);
+        loggedMessages.add(key);
+      }
+    });
   }
 
   res.sendStatus(200);
