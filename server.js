@@ -199,14 +199,21 @@ app.post("/webhook/transcript", (req, res) => {
     console.log(`🎤 Speech Status: ${payload.message.status} (${payload.message.role})`);
   }
 
-  // 5. Unknown events
+  // 5. Unknown events — minimal log only
   else {
-    console.log("⚠️ Unknown Transcript Event Payload:");
-    console.dir(payload, { depth: null });
+    console.log("⚠️ Unrecognized event type or structure.");
+    if (payload?.type) {
+      console.log(`Event type: ${payload.type}`);
+    } else if (payload?.message?.type) {
+      console.log(`Message type: ${payload.message.type}`);
+    } else {
+      console.log("Structure not recognized.");
+    }
   }
 
   res.sendStatus(200);
 });
+
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
