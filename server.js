@@ -246,6 +246,11 @@ app.post("/webhook/call-status", (req, res) => {
   res.sendStatus(200);
 });
 
+app.get("/call-status", (req, res) => {
+  res.json({ status: currentCallStatus });
+});
+
+
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
