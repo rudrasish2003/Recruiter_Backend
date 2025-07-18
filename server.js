@@ -162,31 +162,33 @@ You are here to make the candidate feel comfortable while collecting the informa
 app.post("/webhook/transcript", (req, res) => {
   const payload = req.body;
 
-  // 1. Real-time transcript
+  // 1. Live transcripts (streaming messages)
   if (payload?.type === "transcript" && payload.transcript && payload.speaker) {
-    if (payload.speaker === "user" || payload.speaker === "bot") {
+    if (["user", "bot"].includes(payload.speaker)) {
       console.log(`[${payload.speaker.toUpperCase()}]: ${payload.transcript}`);
     }
   }
 
-  // 2. Final Summary with messages (if needed)
+  // 2. Final message log (summary)
   else if (payload?.summary && payload?.messages) {
     payload.messages.forEach(msg => {
-      if (msg.role === "user" || msg.role === "bot") {
+      if (
+        (msg.role === "user" || msg.role === "bot") &&
+        !msg.message.includes("You are a professional and friendly AI recruiter")
+      ) {
         console.log(`[${msg.role.toUpperCase()}]: ${msg.message}`);
       }
     });
   }
 
-  // 3. Conversation updates — print only clean user/bot lines
+  // 3. Conversation updates (streamed full messages)
   else if (payload?.message?.type === "conversation-update") {
     if (Array.isArray(payload.message.messages)) {
       payload.message.messages.forEach(m => {
-        const isSystem =
-          m.role === "assistant" &&
-          m.message?.includes("You are a professional and friendly AI recruiter");
-
-        if ((m.role === "bot" || m.role === "user") && !isSystem) {
+        if (
+          (m.role === "user" || m.role === "bot") &&
+          !m.message.includes("You are a professional and friendly AI recruiter")
+        ) {
           console.log(`[${m.role.toUpperCase()}]: ${m.message}`);
         }
       });
@@ -195,6 +197,7 @@ app.post("/webhook/transcript", (req, res) => {
 
   res.sendStatus(200);
 });
+
 
 
 app.listen(PORT, () => {
