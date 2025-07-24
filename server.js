@@ -326,19 +326,20 @@ app.get("/transcript", (req, res) => {
 });
 
 app.post('/vapi/call-end', async (req, res) => {
+  console.log('📦 Incoming webhook body:', req.body);
+
   const { message } = req.body || {};
 
   if (message?.status === 'ended') {
     console.log(`✅ Call ended. Reason: ${message.endedReason}`);
 
-    // Optional: Call another API
-    // await axios.post('https://your-api.com/notify', { reason: message.endedReason });
-
+    // Trigger your action here
     return res.status(200).json({ status: 'received', reason: message.endedReason });
   }
 
   return res.status(400).json({ error: 'Not an end-of-call status update' });
 });
+
 
 // ✅ Start server
 app.listen(PORT, () => {
