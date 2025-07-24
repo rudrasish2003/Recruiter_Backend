@@ -171,7 +171,7 @@ Follow this structured order — adapt to resume content naturally:
     - Paperwork upload reminder
 17. Ask when they can complete onboarding  
 18. Ask when to follow up  
-19. Thank them and end politely
+19. Thank them and end politely buy calling endCall tool
  
 ---
  
@@ -235,7 +235,10 @@ Email spelling and OTP verification are **disabled** — proceed directly to scr
               role: "assistant",
               content: systemPrompt.trim()
             }
-          ]
+          ],
+          toolIds: [
+        "c731a173-b107-4521-af28-48561350c971"
+      ]
         },
         firstMessage: `Hi`,
         firstMessageMode: "assistant-speaks-first",
@@ -329,20 +332,20 @@ app.get("/transcript", (req, res) => {
 app.post("/vapi/call-end", async (req, res) => {
   const body = req.body;
 
-  console.log("📦 Incoming webhook body:", body);
+  console.log(" Incoming webhook body:", body);
 
   // if (!body || !body.message || body.message.type !== "end-of-call-report") {
-  //   console.error("❌ Not a valid end-of-call-report");
+  //   console.error(" Not a valid end-of-call-report");
   //   return res.status(400).json({ error: "Not a valid end-of-call-report" });
   // }
 
   const { endedReason, call, summary, transcript, messages } = body.message;
 
-  console.log("✅ End-of-call report received:");
-  console.log("📞 Call ID:", call?.id);
-  console.log("🔚 Reason:", endedReason);
-  console.log("📝 Summary:", summary);
-  console.log("🗣️ Transcript:", transcript);
+  console.log(" End-of-call report received:");
+  console.log(" Call ID:", call?.id);
+  console.log(" Reason:", endedReason);
+  console.log("Summary:", summary);
+  console.log(" Transcript:", transcript);
 
   // TODO: Add your follow-up logic here
   // await axios.post("https://your-other-api.com", { data: ... });
