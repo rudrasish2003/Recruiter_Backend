@@ -326,20 +326,15 @@ app.get("/transcript", (req, res) => {
 });
 
 app.post('/vapi/call-end', (req, res) => {
-  console.log("🔍 Full incoming payload:", JSON.stringify(req.body, null, 2));
+  const { type, endedReason } = req.body;
 
-  const message = req.body?.message;
-
-  if (message?.type === 'end-of-call-report') {
-    const endedReason = message.endedReason;
+  if (type === 'end-of-call-report') {
     console.log(`✅ Call ended. Reason: ${endedReason}`);
     res.status(200).send({ status: 'received', endedReason });
   } else {
-    console.warn("❌ Not a valid end-of-call-report");
     res.status(400).send({ error: 'Not a valid end-of-call-report' });
   }
 });
-
 
 // ✅ Start server
 app.listen(PORT, () => {
