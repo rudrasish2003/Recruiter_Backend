@@ -326,7 +326,13 @@ app.get("/transcript", (req, res) => {
 });
 
 app.post('/vapi/call-end', (req, res) => {
-  const { type, endedReason } = req.body;
+  const { body } = req;
+
+  if (!body || typeof body !== 'object') {
+    return res.status(400).send({ error: 'Missing or invalid body' });
+  }
+
+  const { type, endedReason } = body;
 
   if (type === 'end-of-call-report') {
     console.log(`✅ Call ended. Reason: ${endedReason}`);
@@ -335,6 +341,7 @@ app.post('/vapi/call-end', (req, res) => {
     res.status(400).send({ error: 'Not a valid end-of-call-report' });
   }
 });
+
 
 // ✅ Start server
 app.listen(PORT, () => {
