@@ -155,7 +155,7 @@ Follow this structured order — adapt to resume content naturally:
    - If NO → inform contractor can assist with getting one  
 8. Ask if they can pass a background check, drug test, and physical  
 9. Confirm they are over 21  
-   - If 50 or older → inform video interview will be required  
+    
 10. Ask if they have reliable daily transportation  
     - If NO → request address and mention commute is required  
 11. Share terminal address from client info → ask how far it is from them  
@@ -170,7 +170,8 @@ Follow this structured order — adapt to resume content naturally:
     - Drug Test & Physical (complete within 5 business days)
     - Paperwork upload reminder
 17. Ask when they can complete onboarding  
-18. Ask when to follow up  
+18. Ask when to follow up 
+19.Confirm follow up date 
 19. Thank them and end politely 
 20.End call by calling endCall tool.
  
@@ -218,6 +219,33 @@ Or:
 ---
 
 Email spelling and OTP verification are **disabled** — proceed directly to screening.`;
+
+await axios.patch(
+  "https://api.vapi.ai/tool/c731a173-b107-4521-af28-48561350c971",
+  {
+    messages: [
+      {
+        contents: [null],
+        type: "request-start",
+        blocking: false,
+        content: "Thank you so much for your time. I'll let the team know you're ready to move forward. Have a great rest of your day.",
+        conditions: [
+          {
+            operator: null,
+            param: null,
+            value: null
+          }
+        ]
+      }
+    ],
+    type: "endCall"
+  },
+  {
+    headers: {
+      Authorization: `Bearer ${process.env.VAPI_API_KEY}`
+    }
+  }
+);
 
   try {
     // Update assistant prompt
