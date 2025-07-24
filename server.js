@@ -326,21 +326,29 @@ app.get("/transcript", (req, res) => {
   res.json({ transcript: transcriptLog });
 });
 
-app.post('/vapi/call-end', async (req, res) => {
-  console.log('📦 Incoming webhook body:', req.body);
+app.post("/vapi/call-end", async (req, res) => {
+  const body = req.body;
 
-  const { message } = req.body || {};
+  console.log("📦 Incoming webhook body:", body);
 
-  if (message?.status === 'ended') {
-    console.log(`✅ Call ended. Reason: ${message.endedReason}`);
-
-    // Trigger your action here
-    return res.status(200).json({ status: 'received', reason: message.endedReason });
+  if (!body || !body.message || body.message.type !== "end-of-call-report") {
+    console.error("❌ Not a valid end-of-call-report");
+    return res.status(400).json({ error: "Not a valid end-of-call-report" });
   }
 
-  return res.status(400).json({ error: 'Not an end-of-call status update' });
-});
+  const { endedReason, call, summary, transcript, messages } = body.message;
 
+  console.log("✅ End-of-call report received:");
+  console.log("📞 Call ID:", call?.id);
+  console.log("🔚 Reason:", endedReason);
+  console.log("📝 Summary:", summary);
+  console.log("🗣️ Transcript:", transcript);
+
+  // TODO: Add your follow-up logic here
+  // await axios.post("https://your-other-api.com", { data: ... });
+
+  return res.status(200).json({ status: "acknowledged" });
+});
 
 // ✅ Start server
 app.listen(PORT, () => {
