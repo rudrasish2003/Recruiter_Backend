@@ -171,7 +171,8 @@ Follow this structured order — adapt to resume content naturally:
     - Paperwork upload reminder
 17. Ask when they can complete onboarding  
 18. Ask when to follow up  
-19. Thank them and end politely buy calling endCall tool
+19. Thank them and end politely 
+20.End call by calling endCall tool.
  
 ---
  
