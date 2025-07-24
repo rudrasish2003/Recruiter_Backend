@@ -325,37 +325,30 @@ app.post("/webhook/transcript", (req, res) => {
 app.get("/transcript", (req, res) => {
   res.json({ transcript: transcriptLog });
 });
-app.post("/api/vapi/webhook", async (req, res) => {
-  try {
-    const body = req.body;
-    const message = body?.message;
 
-    if (!message) {
-      console.log("❌ No message field found");
-      return res.status(400).json({ error: "Missing or invalid body" });
-    }
+app.post("/vapi/call-end", async (req, res) => {
+  const body = req.body;
 
-    // Check if it's a status update indicating the call ended
-    if (message.type === "status-update" && message.status === "ended") {
-      console.log("✅ Call ended");
-      console.log("📞 Call ID:", message.call?.id);
-      console.log("📄 Summary:", message.summary);
-      console.log("📝 Transcript:", message.transcript);
-      console.log("📨 Messages:", message.messages);
+  console.log("📦 Incoming webhook body:", body);
 
-      // Trigger your logic here (e.g., save report, notify client, etc.)
+  // if (!body || !body.message || body.message.type !== "end-of-call-report") {
+  //   console.error("❌ Not a valid end-of-call-report");
+  //   return res.status(400).json({ error: "Not a valid end-of-call-report" });
+  // }
 
-      return res.status(200).json({ success: true, message: "End-of-call report received" });
-    }
+  const { endedReason, call, summary, transcript, messages } = body.message;
 
-    console.log("⚠️ Not an end-of-call status update");
-    return res.status(400).json({ error: "Not an end-of-call status update" });
-  } catch (error) {
-    console.error("❌ Error handling webhook:", error);
-    return res.status(500).json({ error: "Internal server error" });
-  }
+  console.log("✅ End-of-call report received:");
+  console.log("📞 Call ID:", call?.id);
+  console.log("🔚 Reason:", endedReason);
+  console.log("📝 Summary:", summary);
+  console.log("🗣️ Transcript:", transcript);
+
+  // TODO: Add your follow-up logic here
+  // await axios.post("https://your-other-api.com", { data: ... });
+
+  return res.status(200).json({ status: "acknowledged" });
 });
-
 
 // ✅ Start server
 app.listen(PORT, () => {
