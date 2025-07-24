@@ -325,26 +325,20 @@ app.get("/transcript", (req, res) => {
   res.json({ transcript: transcriptLog });
 });
 
-app.post('/vapi/call-end', (req, res) => {
-  console.log("📩 Headers:", req.headers);
-  console.log("📨 Body:", req.body);
+app.post('/vapi/call-end', async (req, res) => {
+  const { message } = req.body || {};
 
-  const { body } = req;
+  if (message?.status === 'ended') {
+    console.log(`✅ Call ended. Reason: ${message.endedReason}`);
 
-  if (!body || typeof body !== 'object') {
-    return res.status(400).send({ error: 'Missing or invalid body' });
+    // Optional: Call another API
+    // await axios.post('https://your-api.com/notify', { reason: message.endedReason });
+
+    return res.status(200).json({ status: 'received', reason: message.endedReason });
   }
 
-  const { type, endedReason } = body;
-
-  if (type === 'end-of-call-report') {
-    console.log(`✅ Call ended. Reason: ${endedReason}`);
-    res.status(200).send({ status: 'received', endedReason });
-  } else {
-    res.status(400).send({ error: 'Not a valid end-of-call-report' });
-  }
+  return res.status(400).json({ error: 'Not an end-of-call status update' });
 });
-
 
 // ✅ Start server
 app.listen(PORT, () => {
