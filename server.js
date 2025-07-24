@@ -326,6 +326,9 @@ app.get("/transcript", (req, res) => {
 });
 
 app.post('/vapi/call-end', (req, res) => {
+  console.log("📩 Headers:", req.headers);
+  console.log("📨 Body:", req.body);
+
   const { body } = req;
 
   if (!body || typeof body !== 'object') {
