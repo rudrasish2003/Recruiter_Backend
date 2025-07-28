@@ -185,7 +185,7 @@ Response:
 
 After the candidate provides a time:
 - Say: “Thank you. 
--I’ve scheduled your call with our recruiter at [given time], wait for confirmation. Have a great day!”
+-I’ve scheduled your call with our recruiter at time said by the candidate, wait for confirmation. Have a great day!”
 - Call the endCall tool
 
 ---
