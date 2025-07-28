@@ -174,6 +174,15 @@ Follow this structured order — adapt to resume content naturally:
 19.Confirm follow up date 
 19. Thank them and end politely 
 20.End call by calling endCall tool.
+
+21. If the candidate asks for human recruiter or human escalation like "Can I talk to a human","can I talk to human recruiter" and so on
+    Request him to tell a time to reschedule the interview with a human recruiter.
+    -- Confirm the time say thank you and call endCall tool.
+
+22.If candidate shows no interest say thank you for time and call endCall tool
+23.If candidate asks to reschedule confirm a time and give confirmation 
+   ----After confirming call the endCall tool.
+    
  
 ---
  
@@ -219,34 +228,7 @@ Or:
 ---
 
 Email spelling and OTP verification are **disabled** — proceed directly to screening.`;
-
-await axios.patch(
-  "https://api.vapi.ai/tool/c731a173-b107-4521-af28-48561350c971",
-  {
-    messages: [
-      {
-        contents: [null],
-        type: "request-start",
-        blocking: false,
-        content: "Thank you so much for your time. I'll let the team know you're ready to move forward. Have a great rest of your day.",
-        conditions: [
-          {
-            operator: null,
-            param: null,
-            value: null
-          }
-        ]
-      }
-    ],
-    type: "endCall"
-  },
-  {
-    headers: {
-      Authorization: `Bearer ${process.env.VAPI_API_KEY}`
-    }
-  }
-);
-
+ 
   try {
     // Update assistant prompt
     await axios.patch(
@@ -317,6 +299,8 @@ await axios.patch(
     });
   }
 });
+
+//Incoming Call
 
 // ✅ Transcript webhook
 const transcriptLog = [];
