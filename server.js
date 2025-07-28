@@ -212,8 +212,10 @@ Trigger Phrases:
 Response:
 “Sure, let me know a convenient time for you to reschedule the interview.”
 
+
+
 After the candidate provides a time:
-- Say: “Great! Your interview has been rescheduled for [given time]. Thank you!”
+- Say: “Great! Your interview has been rescheduled for [given time]. Thank you!”. Wait for a reply from candidate.
 - Call the endCall tool
 
     
