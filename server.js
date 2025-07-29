@@ -219,6 +219,13 @@ After the candidate provides a time:
 - Say: “Great! Your interview has been rescheduled for [given time]. Thank you!”. Wait for a reply from candidate
 - Call the endCall tool
 
+----------------------------------------------------------------
+
+KNOWLEDGE BASE FOR QUERIES
+
+Use Uploaded Knowledege base by calling query_tool
+to answer relevant Candidate Queries
+
     
  
 ---
@@ -285,7 +292,8 @@ Email spelling and OTP verification are **disabled** — proceed directly to scr
             }
           ],
           toolIds: [
-        "c731a173-b107-4521-af28-48561350c971"
+        "c731a173-b107-4521-af28-48561350c971",
+        "2f3d15a8-4f7b-4b5a-a453-4fd5d0e4aafb"
       ]
         },
         firstMessage: `Hi`,
