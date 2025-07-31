@@ -87,6 +87,7 @@ Bachelor of Technology in Computer Science and Engineering`
 const clientInfo = `
 {"_id":"6878f13360f030f96227bb74","jobCategory":"FedEx P&D Full Service 17-07-2025 5pm","jobType":[{"vJobId":6,"vJobName":"Non CDL/L20","vJobDescription":"html data","_id":"6878f13360f030f96227bb75"}],"company":"Bossert Logistics Inc.","vendor":{"name":{"first":"Anjali","last":"Kumari"},"_id":"6826d6dac5ac488cd6192991","email":"anjali@gmail.com"},"clientName":"Bossert Logistics Inc.","name":"Bossert Logistics Inc.","vClientId":"203","timeZone":"Central Daylight","terminalAddress":"450 Falling Creek Rd. Spartanburg, SC. 29301","howManyRoutes":"30","additionalInformation":"{\"Driver Information\":{\"Minimum Required Experience for Drivers\":\"1-3 Years (At least 1-year verifiable commercial driving experience in large trucks.)\",\"Types of Routes\":\"15% Rural, 85% Suburban with residential and business\",\"Areas your CSA Covers\":\"Spartanburg, Boiling Springs, Inman, Campobello and Landrum, SC.\",\"Fixed Route or Floater ?\":\"Fixed\",\"Non-CDL Drivers needed\":\"10/Month\",\"L-10 Drivers needed\":\"\",\"Alternate Vehicle Drivers needed\":\"\",\"Additional Information\":\"**  No Female Drivers **. Drivers between 25-45 years to be chosen.\"},\"Driver Schedule\":{\"Start time for Driver\":\"08:00 AM\",\"Typical hours run each day\":\"7-8 Hours\",\"Typical Miles Driven each day\":\"40-75 Miles\",\"Work Schedules\":\"5 Days with a Weekend, Weekend Drivers\",\"Additional Information\":\"\"},\"Benefits\":{\"Pay Structure\":\"Flat daily Pay\",\"How much do you Pay your drivers ?\":\"Starting pay 140/day - 150/day depending on experience\",\"Training\":\"1 Week same pay\",\"Incentives\":\"\",\"Payday\":\"Friday\",\"Vacation/ Sick Time\":\"\",\"Other Benefits\":\"Health, Dental, Vision, Short/Long Term Disability and Life Insurance available\",\"Additional Information\":\"\"},\"Miscellaneous\":{\"Trucks(Can you describe your fleet in brief )\":\"P1000 Trucks or bigger trucks\",\"Additional Information(Please let us know if there is any other information that you would like to share.)\":\"\"},\"User Account\":{\"Plan Subscribed To\":\"FedEx P&D Full Service\",\"Time Zone\":\"US/Eastern\",\"Question Templates\":\"\"}}","createdAt":"2025-07-17T12:48:51.337Z","updatedAt":"2025-07-17T12:48:51.337Z","__v":0}
 `;
+const candidateId=`123a`;
 
 // ✅ /api/call endpoint
 app.post("/api/call", async (req, res) => {
@@ -184,6 +185,7 @@ Response:
 “Sure, I can help with that. Could you please tell me a suitable time for the human recruiter to reach out to you?”
 
 After the candidate provides a time:
+-When the candidate provides a time for a human recruiter to call back, use the HumanCall tool with candidateId which is ${candidateId} and scheduledTime.
 - Say: “Thank you. 
 -I’ve scheduled your call with our recruiter at time said by the candidate, wait for confirmation. Have a great day!”
 - Call the endCall tool
@@ -273,6 +275,7 @@ Or:
 
 Email spelling and OTP verification are **disabled** — proceed directly to screening.`;
  
+
   try {
     // Update assistant prompt
     await axios.patch(
@@ -293,7 +296,8 @@ Email spelling and OTP verification are **disabled** — proceed directly to scr
           ],
           toolIds: [
         "c731a173-b107-4521-af28-48561350c971",
-        "2f3d15a8-4f7b-4b5a-a453-4fd5d0e4aafb"
+        "2f3d15a8-4f7b-4b5a-a453-4fd5d0e4aafb",
+        "c8f00fad-09fc-4f62-8c85-d211d1c63dc7"
       ]
         },
         firstMessage: `Hi`,
