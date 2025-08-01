@@ -87,7 +87,7 @@ Bachelor of Technology in Computer Science and Engineering`
 const clientInfo = `
 {"_id":"6878f13360f030f96227bb74","jobCategory":"FedEx P&D Full Service 17-07-2025 5pm","jobType":[{"vJobId":6,"vJobName":"Non CDL/L20","vJobDescription":"html data","_id":"6878f13360f030f96227bb75"}],"company":"Bossert Logistics Inc.","vendor":{"name":{"first":"Anjali","last":"Kumari"},"_id":"6826d6dac5ac488cd6192991","email":"anjali@gmail.com"},"clientName":"Bossert Logistics Inc.","name":"Bossert Logistics Inc.","vClientId":"203","timeZone":"Central Daylight","terminalAddress":"450 Falling Creek Rd. Spartanburg, SC. 29301","howManyRoutes":"30","additionalInformation":"{\"Driver Information\":{\"Minimum Required Experience for Drivers\":\"1-3 Years (At least 1-year verifiable commercial driving experience in large trucks.)\",\"Types of Routes\":\"15% Rural, 85% Suburban with residential and business\",\"Areas your CSA Covers\":\"Spartanburg, Boiling Springs, Inman, Campobello and Landrum, SC.\",\"Fixed Route or Floater ?\":\"Fixed\",\"Non-CDL Drivers needed\":\"10/Month\",\"L-10 Drivers needed\":\"\",\"Alternate Vehicle Drivers needed\":\"\",\"Additional Information\":\"**  No Female Drivers **. Drivers between 25-45 years to be chosen.\"},\"Driver Schedule\":{\"Start time for Driver\":\"08:00 AM\",\"Typical hours run each day\":\"7-8 Hours\",\"Typical Miles Driven each day\":\"40-75 Miles\",\"Work Schedules\":\"5 Days with a Weekend, Weekend Drivers\",\"Additional Information\":\"\"},\"Benefits\":{\"Pay Structure\":\"Flat daily Pay\",\"How much do you Pay your drivers ?\":\"Starting pay 140/day - 150/day depending on experience\",\"Training\":\"1 Week same pay\",\"Incentives\":\"\",\"Payday\":\"Friday\",\"Vacation/ Sick Time\":\"\",\"Other Benefits\":\"Health, Dental, Vision, Short/Long Term Disability and Life Insurance available\",\"Additional Information\":\"\"},\"Miscellaneous\":{\"Trucks(Can you describe your fleet in brief )\":\"P1000 Trucks or bigger trucks\",\"Additional Information(Please let us know if there is any other information that you would like to share.)\":\"\"},\"User Account\":{\"Plan Subscribed To\":\"FedEx P&D Full Service\",\"Time Zone\":\"US/Eastern\",\"Question Templates\":\"\"}}","createdAt":"2025-07-17T12:48:51.337Z","updatedAt":"2025-07-17T12:48:51.337Z","__v":0}
 `;
-const candidateId=`688a090900e6d8c627797455`;
+const candidateId=`688c925a41d8a04ff9a2362b`;
 
 // ✅ /api/call endpoint
 app.post("/api/call", async (req, res) => {
@@ -187,10 +187,13 @@ Response:
 
 After Candidate Provides a Time:
 
-1. You must extract and understand the time provided by the candidate in natural language format (e.g., “14 August 2025 at 10 AM”, “tomorrow at 4 PM”).
+1. If the candidate provides vague time expressions (e.g., “tomorrow”, “next week”, “in a few days”), politely ask them to provide the exact date in the format: **“14 August 2025 at 2 PM”** or similar.
 
-2. Convert this time from IST (Indian Standard Time, UTC+05:30) to ISO 8601 UTC format.
-   - For example: “14 August 2025 at 10 AM” → “2025-08-14T04:30:00.000Z”
+Example:
+> “Got it! To avoid confusion, could you please confirm the exact date and time? For example: 14 August 2025 at 2 PM.”
+
+2. Once the candidate provides a proper date and time, assume the time is in Indian Standard Time (IST, UTC+05:30). Convert it to ISO 8601 UTC format.
+   - Example: “14 August 2025 at 2 PM” → “2025-08-14T08:30:00.000Z”
 
 3. Use the rescheduleCandidate tool with:
    - candidateId = ${candidateId}
