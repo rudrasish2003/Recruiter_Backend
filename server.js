@@ -197,10 +197,10 @@ Example:
 
 3. Use the rescheduleCandidate tool with:
    - candidateId = ${candidateId}
-   - scheduledTime = [converted ISO UTC time]
+   - scheduledTime = converted ISO UTC time
 
 4. Say:
-   “Thank you. I’ve scheduled your call with our recruiter at [candidate’s original input time], wait for confirmation. Have a great day!”
+   “Thank you. I’ve scheduled your call with our recruiter at time said by candidate, wait for confirmation. Have a great day!”
 
 5. Call the endCall tool.
 
