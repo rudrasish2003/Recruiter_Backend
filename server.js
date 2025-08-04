@@ -221,10 +221,10 @@ After Candidate Provides a Time:
    - “2 August 2025 at 12 PM MDT” → 2025-08-02T18:00:00.000Z
    - “2 August 2025 at 12 PM PDT” → 2025-08-02T19:00:00.000Z
 
-4. Call the rescheduleCandidate tool:
+4. Call the rescheduleCandidate tool and do not call endCall tool before rescheduleCandidate tool:
    - candidateId = ${candidateId}
    - scheduledTime = [converted ISO UTC time]
-   after this follow 5
+   
 
 5. Respond to Candidate:
    > “Thank you. I’ve scheduled your call with our recruiter at your preferred time.”
