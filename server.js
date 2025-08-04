@@ -88,6 +88,7 @@ const clientInfo = `
 {"_id":"6878f13360f030f96227bb74","jobCategory":"FedEx P&D Full Service 17-07-2025 5pm","jobType":[{"vJobId":6,"vJobName":"Non CDL/L20","vJobDescription":"html data","_id":"6878f13360f030f96227bb75"}],"company":"Bossert Logistics Inc.","vendor":{"name":{"first":"Anjali","last":"Kumari"},"_id":"6826d6dac5ac488cd6192991","email":"anjali@gmail.com"},"clientName":"Bossert Logistics Inc.","name":"Bossert Logistics Inc.","vClientId":"203","timeZone":"Central Daylight","terminalAddress":"450 Falling Creek Rd. Spartanburg, SC. 29301","howManyRoutes":"30","additionalInformation":"{\"Driver Information\":{\"Minimum Required Experience for Drivers\":\"1-3 Years (At least 1-year verifiable commercial driving experience in large trucks.)\",\"Types of Routes\":\"15% Rural, 85% Suburban with residential and business\",\"Areas your CSA Covers\":\"Spartanburg, Boiling Springs, Inman, Campobello and Landrum, SC.\",\"Fixed Route or Floater ?\":\"Fixed\",\"Non-CDL Drivers needed\":\"10/Month\",\"L-10 Drivers needed\":\"\",\"Alternate Vehicle Drivers needed\":\"\",\"Additional Information\":\"**  No Female Drivers **. Drivers between 25-45 years to be chosen.\"},\"Driver Schedule\":{\"Start time for Driver\":\"08:00 AM\",\"Typical hours run each day\":\"7-8 Hours\",\"Typical Miles Driven each day\":\"40-75 Miles\",\"Work Schedules\":\"5 Days with a Weekend, Weekend Drivers\",\"Additional Information\":\"\"},\"Benefits\":{\"Pay Structure\":\"Flat daily Pay\",\"How much do you Pay your drivers ?\":\"Starting pay 140/day - 150/day depending on experience\",\"Training\":\"1 Week same pay\",\"Incentives\":\"\",\"Payday\":\"Friday\",\"Vacation/ Sick Time\":\"\",\"Other Benefits\":\"Health, Dental, Vision, Short/Long Term Disability and Life Insurance available\",\"Additional Information\":\"\"},\"Miscellaneous\":{\"Trucks(Can you describe your fleet in brief )\":\"P1000 Trucks or bigger trucks\",\"Additional Information(Please let us know if there is any other information that you would like to share.)\":\"\"},\"User Account\":{\"Plan Subscribed To\":\"FedEx P&D Full Service\",\"Time Zone\":\"US/Eastern\",\"Question Templates\":\"\"}}","createdAt":"2025-07-17T12:48:51.337Z","updatedAt":"2025-07-17T12:48:51.337Z","__v":0}
 `;
 const candidateId=`688c9709002c355f066e1c86`;
+const start_time=`2023-10-18T15:00:00.000Z`
 
 // ✅ /api/call endpoint
 app.post("/api/call", async (req, res) => {
@@ -187,44 +188,64 @@ Trigger Phrases:
 
 Human Escalation Request Handling
 
+---
+
 Trigger Phrases:
 - "Can I talk to a human?"
 - "I want to speak with a recruiter"
 - "Can I get a call back from a person?"
 
+---
+
 Response:
 “Sure, I can help with that. Could you please tell me a suitable time for the human recruiter to reach out to you?”
 
+---
+
 After Candidate Provides a Time:
 
-1. If the candidate gives vague terms like “tomorrow” or “next week,” ask them to confirm the **exact date and time**, and also include their **local time zone** (e.g., “2 August 2025 at 12 PM EST”).
+1. If the candidate gives vague terms like “tomorrow” or “next week,” calculate the date relative to the reference start time that is ${start_time}.
 
    Example:
-   > “Thanks! To schedule this correctly, could you please confirm the exact date, time, and your time zone? For example: ‘2 August 2025 at 12 PM EST’.”
+   - Reference Time: 2023-10-18T15:00:00.000Z
+   - Candidate says: “Tomorrow at 2 PM”
+   - Resolved Time: 2023-10-19 at 2 PM (ask for time zone)
+
+   Ask:
+   > “Just to confirm, you meant **October 19, 2023 at 2 PM**? Please also mention your time zone (like EST, PST, etc.) so I can schedule correctly.”
+
+---
 
 2. Assume all candidates are from the United States and may use time zones such as:
    - EST (Eastern Standard Time) → UTC -5
    - EDT (Eastern Daylight Time) → UTC -4
    - CST/CDT, MST/MDT, PST/PDT as applicable
 
-3. Convert the candidate’s provided time to **ISO 8601 format in UTC**.
-   - Examples of time zone conversion:
+---
 
-- “2 August 2025 at 12 PM EDT” → 2025-08-02T16:00:00.000Z
-- “2 August 2025 at 12 PM CDT” → 2025-08-02T17:00:00.000Z
-- “2 August 2025 at 12 PM MDT” → 2025-08-02T18:00:00.000Z
-- “2 August 2025 at 12 PM PDT” → 2025-08-02T19:00:00.000Z
+3. Convert the candidate’s confirmed time to ISO 8601 format in UTC.
 
-Always assume the candidate is referring to U.S. time zones and convert accordingly to ISO 8601 UTC.
+   Examples:
+   - “2 August 2025 at 12 PM EDT” → 2025-08-02T16:00:00.000Z
+   - “2 August 2025 at 12 PM CDT” → 2025-08-02T17:00:00.000Z
+   - “2 August 2025 at 12 PM MDT” → 2025-08-02T18:00:00.000Z
+   - “2 August 2025 at 12 PM PDT” → 2025-08-02T19:00:00.000Z
 
-4. Use the rescheduleCandidate tool with:
+---
+
+4. Use the rescheduleCandidate tool:
    - candidateId = ${candidateId}
    - scheduledTime = [converted ISO UTC time]
 
-5. Say:
-   > “Thank you. I’ve scheduled your call with our recruiter at candidate's time, wait for confirmation. Have a great day!”
+---
 
-6.After Confirming to candidate call the endCall tool.
+5. Respond to Candidate:
+   > “Thank you. I’ve scheduled your call with our recruiter at your preferred time.”
+
+
+---
+
+6. Then call the endCall tool.
 
 ---
 
