@@ -235,8 +235,8 @@ Response:
 
 
 After the candidate provides a time:
-- Say: “Great! Your interview has been rescheduled for [given time]. Thank you!”. Wait for a reply from candidate
-- Call the endCall tool
+- Say: “Great! Your interview has been rescheduled for given time. Thank you!”. Wait for a reply from candidate
+- Say Thank you our human recruiter will contact you and Call the endCall tool
 
 ----------------------------------------------------------------
 
