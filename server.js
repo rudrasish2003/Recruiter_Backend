@@ -298,12 +298,12 @@ After Candidate Provides a Time:
 1. If the candidate gives vague terms like "tomorrow" or "next week," calculate the date relative to the reference start time that is ${start_time}.
 
    Example:
-   - Reference Time: 2023-10-18T15:00:00.000Z
+   - Reference Time: ${start_time}
    - Candidate says: "Tomorrow at 2 PM"
-   - Resolved Time: 2023-10-19 at 2 PM (ask for time zone)
+   - Resolved Time: as per reference time
 
    Ask:
-   "Just to confirm, you meant October 19, 2023 at 2 PM? Please also mention your time zone (like EST, PST, etc.) so I can schedule correctly."
+   "Just to confirm, you meant resolved time? Please also mention your time zone (like EST, PST, etc.) so I can schedule correctly."
 
 2. Assume all candidates are from the United States and may use time zones such as:
    - EST → UTC -5
