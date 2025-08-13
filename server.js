@@ -743,17 +743,43 @@ app.post('/vapi/webhook', async (req, res) => {
   switch (message.type) {
     case 'status-update':
       console.log(`Call ${message.call.id}: ${message.status}`);
+
+      if (message.status === 'ended') {
+        try {
+          await axios.post('https://recruiter-backend-pg5a.onrender.com/api/call-status', {
+            callId: message.call.id,
+            status: message.status
+          });
+          console.log(`Status sent for Call ${message.call.id}`);
+        } catch (err) {
+          console.error('Error sending status:', err.message);
+        }
+      }
       break;
+
     case 'transcript':
       console.log(`${message.role}: ${message.transcript}`);
       break;
+
     case 'function-call':
       // Handle function calls here if needed
       break;
-    // Add more cases as needed for other event types
+
+    // Add more cases as needed
   }
 
   res.status(200).json({ received: true });
+});
+
+app.post('/api/call-status', (req, res) => {
+  const { callId, status } = req.body;
+
+  console.log(`Received call status update: Call ID = ${callId}, Status = ${status}`);
+
+  // You could store this in a database here
+  // e.g., saveCallStatusToDB(callId, status);
+
+  res.status(200).json({ success: true, message: 'Call status received' });
 });
 
 
