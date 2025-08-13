@@ -737,24 +737,36 @@ app.post("/vapi/call-end", async (req, res) => {
   return res.status(200).json({ status: "acknowledged" });
 });
 
+ 
+
+// Raw body handler with size limit
 app.post('/vapi/webhook', async (req, res) => {
-  const { message } = req.body;
+  try {
+    // Read only the first part of the payload, up to ~200kb
+    const raw = await getRawBody(req, { limit: '200kb', encoding: 'utf8' });
 
-  switch (message.type) {
-    case 'status-update':
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch (e) {
+      console.error('Invalid JSON received');
+      return res.status(400).json({ error: 'Invalid JSON' });
+    }
+
+    const message = data?.message;
+    if (message?.type === 'status-update') {
       console.log(`Call ${message.call.id}: ${message.status}`);
-      break;
-    case 'transcript':
-      console.log(`${message.role}: ${message.transcript}`);
-      break;
-    case 'function-call':
-      // Handle function calls here if needed
-      break;
-    // Add more cases as needed for other event types
-  }
+    }
 
-  res.status(200).json({ received: true });
+    res.status(200).json({ received: true });
+  } catch (err) {
+    console.error('Error processing webhook:', err.message);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
+
+ 
+
 
 
 app.get("/api/call-logs/:callId", async (req, res) => {
