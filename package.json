@@ -11,13 +11,18 @@
   "author": "Rudrasish Dutta",
   "license": "ISC",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "axios": "^1.10.0",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
-    "dotenv": "^17.2.0",
+    "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "multer": "^2.0.1",
+    "node-fetch": "^3.3.2",
+    "openai": "^5.12.2",
     "pdf-parse": "^1.1.1",
+    "pdfkit": "^0.17.1",
+    "puppeteer": "^24.16.1",
     "ws": "^8.18.3"
   },
   "devDependencies": {
@@ -26,5 +31,14 @@
     "nodemon": "^3.1.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rudrasish2003/Recruiter_Backend.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/rudrasish2003/Recruiter_Backend/issues"
+  },
+  "homepage": "https://github.com/rudrasish2003/Recruiter_Backend#readme"
 }
