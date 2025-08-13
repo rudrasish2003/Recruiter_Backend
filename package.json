@@ -23,6 +23,7 @@
     "pdf-parse": "^1.1.1",
     "pdfkit": "^0.17.1",
     "puppeteer": "^24.16.1",
+    "raw-body": "^3.0.0",
     "ws": "^8.18.3"
   },
   "devDependencies": {

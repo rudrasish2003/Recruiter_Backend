@@ -742,14 +742,14 @@ app.post("/vapi/call-end", async (req, res) => {
 // Raw body handler with size limit
 app.post('/vapi/webhook', async (req, res) => {
   try {
-    // Read only the first part of the payload, up to ~200kb
+    // Read raw body but limit size (200kb is enough for status updates)
     const raw = await getRawBody(req, { limit: '200kb', encoding: 'utf8' });
 
     let data;
     try {
       data = JSON.parse(raw);
-    } catch (e) {
-      console.error('Invalid JSON received');
+    } catch {
+      console.error('Invalid JSON from Vapi');
       return res.status(400).json({ error: 'Invalid JSON' });
     }
 
@@ -764,8 +764,6 @@ app.post('/vapi/webhook', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
- 
 
 
 
