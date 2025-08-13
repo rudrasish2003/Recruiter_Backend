@@ -744,7 +744,9 @@ app.post('/vapi/webhook', async (req, res) => {
     case 'status-update':
       console.log(`Call ${message.call.id}: ${message.status}`);
       break;
-    
+    case 'transcript':
+      console.log(`${message.role}: ${message.transcript}`);
+      break;
     case 'function-call':
       // Handle function calls here if needed
       break;
