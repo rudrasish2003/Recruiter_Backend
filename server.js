@@ -18,7 +18,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
- 
+app.use(express.json());
 
 const { OpenAI } = require("openai");
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -737,34 +737,22 @@ app.post("/vapi/call-end", async (req, res) => {
   return res.status(200).json({ status: "acknowledged" });
 });
 
- 
-
-// Raw body handler with size limit
 app.post('/vapi/webhook', async (req, res) => {
-  try {
-    // Read raw body but limit size (200kb is enough for status updates)
-    const raw = await getRawBody(req, { limit: '200kb', encoding: 'utf8' });
+  const { message } = req.body;
 
-    let data;
-    try {
-      data = JSON.parse(raw);
-    } catch {
-      console.error('Invalid JSON from Vapi');
-      return res.status(400).json({ error: 'Invalid JSON' });
-    }
-
-    const message = data?.message;
-    if (message?.type === 'status-update') {
+  switch (message.type) {
+    case 'status-update':
       console.log(`Call ${message.call.id}: ${message.status}`);
-    }
-
-    res.status(200).json({ received: true });
-  } catch (err) {
-    console.error('Error processing webhook:', err.message);
-    res.status(500).json({ error: 'Internal server error' });
+      break;
+    
+    case 'function-call':
+      // Handle function calls here if needed
+      break;
+    // Add more cases as needed for other event types
   }
-});
 
+  res.status(200).json({ received: true });
+});
 
 
 app.get("/api/call-logs/:callId", async (req, res) => {
